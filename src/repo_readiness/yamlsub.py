@@ -4,8 +4,11 @@ Supported: block mappings and sequences (indented with spaces), flow
 collections ``{}`` / ``[]`` on a single line, single- and double-quoted
 strings, plain scalars, comments, and one optional leading ``---``.
 
+Block scalars (``|`` literal, ``>`` folded, with ``-`` / ``+`` chomping) are
+supported because real CI workflows use them; their content is taken raw.
+
 Everything else is rejected with a YamlSubsetError carrying the line number:
-anchors, aliases, tags, block scalars (``|`` / ``>``), multiple documents,
+anchors, aliases, tags, block-scalar indentation indicators, multiple documents,
 tab indentation, complex keys, duplicate keys, multi-line plain or quoted
 scalars and multi-line flow collections. Failing loudly is the point: a
 readiness verdict must never rest on a file we only half understood.
@@ -17,7 +20,7 @@ everything else (dates, hex, versions) -> str. Mapping keys are always str.
 
 import re
 from pathlib import Path
-from typing import Any, List, NamedTuple, Optional, Tuple, Union
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union
 
 __all__ = ["YamlSubsetError", "load", "loads"]
 
@@ -48,10 +51,10 @@ def load(path: Union[str, Path]) -> Any:
 
 
 def loads(text: str) -> Any:
-    toks = _tokenize(text)
+    toks, blocks = _tokenize(text)
     if not toks:
         return None
-    parser = _Parser(toks)
+    parser = _Parser(toks, blocks)
     value, i = parser.block(0, toks[0].indent)
     if i < len(toks):
         raise YamlSubsetError(toks[i].line, "unexpected indentation or trailing content")
@@ -92,9 +95,71 @@ def _strip_comment(raw: str, line: int) -> str:
     return raw
 
 
-def _tokenize(text: str) -> List[_Tok]:
+_BLOCK = "\x00block\x00"  # stands in for a block scalar's value in token text
+_BLOCK_HEADER = re.compile(r"(?:^|(?<=\s))([|>])([0-9]?)([-+]?)([0-9]?)\Z")
+
+
+def _block_header(content: str, indent: int, line: int) -> Optional[Tuple[str, str, str, int]]:
+    """If content ends in a block scalar indicator after 'key:' or '-', return
+    (text with the indicator replaced by _BLOCK, style, chomp, parent column)."""
+    m = _BLOCK_HEADER.search(content)
+    if not m:
+        return None
+    before = content[: m.start()].rstrip()
+    if not (before.endswith(":") or before == "-" or before.endswith(" -")):
+        return None
+    if before.endswith(":") and before != ":" and _split_key(before, line) is None:
+        return None  # the ':' is inside quotes or brackets, so this is a plain value
+    if m.group(2) or m.group(4):
+        raise YamlSubsetError(line, "block scalar indentation indicator is not supported")
+    if before == "-" or before.endswith(" -"):
+        parent = indent  # "- |": the sequence item itself
+    elif content.startswith("- "):
+        parent = indent + (len(content) - len(content[1:].lstrip(" ")))  # "- key: |": the key's column
+    else:
+        parent = indent
+    return before + " " + _BLOCK, m.group(1), m.group(3), parent
+
+
+def _finish_block(lines: List[str], style: str, chomp: str, trailing_blank: int = 0) -> str:
+    """Join de-indented block content lines, then apply chomping.
+
+    Folding (>) joins adjacent plain lines with a space; an empty line becomes a
+    newline; more-indented lines are kept on their own lines.
+    """
+    if not lines:
+        return "\n" * trailing_blank if chomp == "+" else ""
+    if style == "|":
+        body = "\n".join(lines)
+    else:
+        out = []  # type: List[str]
+        for k, ln in enumerate(lines):
+            if k == 0:
+                out.append(ln)
+                continue
+            prev = lines[k - 1]
+            if ln == "":
+                out.append("\n")
+            elif prev == "" or ln.startswith(" ") or prev.startswith(" "):
+                out.append(("\n" if prev != "" else "") + ln)
+            else:
+                out.append(" " + ln)
+        body = "".join(out)
+    if chomp == "-":
+        return body
+    if chomp == "+":
+        return body + "\n" + "\n" * trailing_blank
+    return body + "\n"
+
+
+def _tokenize(text: str) -> Tuple[List[_Tok], Dict[int, str]]:
     toks = []  # type: List[_Tok]
-    for n, raw in enumerate(text.splitlines(), start=1):
+    blocks = {}  # type: Dict[int, str]
+    raws = text.splitlines()
+    i = 0
+    while i < len(raws):
+        n, raw = i + 1, raws[i]
+        i += 1
         lead = raw[: len(raw) - len(raw.lstrip(" \t"))]
         if "\t" in lead and raw.strip():
             raise YamlSubsetError(n, "tab in indentation is not supported")
@@ -102,14 +167,42 @@ def _tokenize(text: str) -> List[_Tok]:
         if not body.strip():
             continue
         content = body.lstrip(" ")
+        indent = len(body) - len(content)
         if content == "---" or content.startswith("--- "):
             if toks or content != "---":
                 raise YamlSubsetError(n, "multiple documents are not supported")
             continue
         if content == "..." or content.startswith("%"):
             raise YamlSubsetError(n, "multiple documents and directives are not supported")
-        toks.append(_Tok(n, len(body) - len(content), content))
-    return toks
+        header = _block_header(content, indent, n)
+        if header:
+            content, style, chomp, parent = header
+            lines = []  # type: List[str]
+            content_indent = None
+            while i < len(raws):
+                r = raws[i]
+                if not r.strip():
+                    lines.append("")
+                    i += 1
+                    continue
+                lead = len(r) - len(r.lstrip(" "))
+                if r[lead:lead + 1] == "\t" and lead <= (content_indent or parent):
+                    raise YamlSubsetError(i + 1, "tab in indentation is not supported")
+                if lead <= parent:
+                    break
+                if content_indent is None:
+                    content_indent = lead
+                elif lead < content_indent:
+                    raise YamlSubsetError(i + 1, "line is less indented than the block scalar's content")
+                lines.append(r[content_indent:])
+                i += 1
+            trailing = 0
+            while lines and lines[-1] == "":
+                lines.pop()
+                trailing += 1
+            blocks[n] = _finish_block(lines, style, chomp, trailing)
+        toks.append(_Tok(n, indent, content))
+    return toks, blocks
 
 
 def _is_item(text: str) -> bool:
@@ -119,8 +212,14 @@ def _is_item(text: str) -> bool:
 # --------------------------------------------------------------------------- block
 
 class _Parser:
-    def __init__(self, toks: List[_Tok]):
+    def __init__(self, toks: List[_Tok], blocks: Dict[int, str]):
         self.toks = toks
+        self.blocks = blocks
+
+    def _value(self, text: str, line: int) -> Any:
+        if text == _BLOCK:
+            return self.blocks[line]
+        return _inline(text, line)
 
     def block(self, i: int, indent: int) -> Tuple[Any, int]:
         if _is_item(self.toks[i].text):
@@ -148,7 +247,7 @@ class _Parser:
                 raise YamlSubsetError(t.line, "duplicate key %r" % key)
             i += 1
             if rest:
-                out[key] = _inline(rest, t.line)
+                out[key] = self._value(rest, t.line)
                 if i < len(toks) and toks[i].indent > indent:
                     raise YamlSubsetError(toks[i].line, "unexpected indentation (multi-line values are not supported)")
             elif i < len(toks) and toks[i].indent > indent:
@@ -186,7 +285,7 @@ class _Parser:
                 value, i = self.block(i, vindent)
                 out.append(value)
                 continue
-            out.append(_inline(rest, t.line))
+            out.append(self._value(rest, t.line))
             i += 1
             if i < len(toks) and toks[i].indent > indent:
                 raise YamlSubsetError(toks[i].line, "unexpected indentation (multi-line values are not supported)")

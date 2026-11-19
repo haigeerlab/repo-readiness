@@ -1,0 +1,43 @@
+name: Validate
+
+on:
+  push: { branches: [main] }
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    # Bash 3.2 的已知语法陷阱由 scripts/validate.sh 的静态检查器覆盖；
+    # GitHub CI 统一跑 Ubuntu，避免 PR 因 macOS runner 排队而阻塞。
+    # 保留单元素矩阵，使现有 required check 名称保持为 validate (ubuntu-latest)。
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: bash 版本
+        run: /bin/bash --version | head -1
+
+      - name: 仓库完整性校验
+        run: /bin/bash scripts/validate.sh
+
+      - name: phase-guard 回归测试
+        run: /bin/bash plugins/spec-guard/hooks/test-phase-guard.sh
+
+      - name: verify-artifacts 回归测试
+        run: /bin/bash plugins/spec-guard/hooks/test-verify-artifacts.sh
+
+      # 这一步原先结尾是 `|| true` —— 结果永远为 0，**一个永远返回 0 的
+      # 校验器和没有校验器没区别**。现在它是真门禁。
+      # 版本钉死：本地就是用这一版跑干净的，apt 的版本随发行版漂移，
+      # 「我验过」和「CI 跑的」就会是两回事。
+      # ⚠️ `shellcheck@4.1.0` 是 **npm 包**的版本，它装的二进制是 shellcheck
+      #    **v0.11.0**（`npx shellcheck@4.1.0 -V` 自己会说）。两个号不一样 ——
+      #    写 `shellcheck@0.11.0` 会 ETARGET，那个版本在 npm 上根本不存在。
+      - name: ShellCheck（阻塞；npm 4.1.0 = 二进制 v0.11.0）
+        # evals/*.sh 此前不在范围里 —— 它们是会真的调模型的脚本，更该被检查
+        # evals/*/*.sh：evals/dispatch-cost/ 下的判分与运行脚本（2026-10-08 审查 F19）
+        run: npx --yes shellcheck@4.1.0 -S warning plugins/spec-guard/hooks/*.sh scripts/*.sh evals/*.sh evals/*/*.sh

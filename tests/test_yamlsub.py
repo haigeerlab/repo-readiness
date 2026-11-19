@@ -96,6 +96,56 @@ class ScalarAndStructureTest(unittest.TestCase):
         self.assertEqual(loads("---\na: 1\n"), {"a": 1})
 
 
+class BlockScalarTest(unittest.TestCase):
+    """Literal (|) and folded (>) block scalars with clip / strip (-) / keep (+) chomping."""
+
+    def test_literal_clip(self):
+        self.assertEqual(loads("run: |\n  echo a\n  echo b\nnext: 1\n"), {"run": "echo a\necho b\n", "next": 1})
+
+    def test_literal_strip_and_keep(self):
+        self.assertEqual(loads("a: |-\n  x\n  y\n\n"), {"a": "x\ny"})
+        self.assertEqual(loads("a: |+\n  x\n\n\nb: 1\n"), {"a": "x\n\n\n", "b": 1})
+
+    def test_folded(self):
+        self.assertEqual(loads("a: >\n  one\n  two\n\n  three\n"), {"a": "one two\nthree\n"})
+        self.assertEqual(loads("a: >-\n  one\n  two\n"), {"a": "one two"})
+
+    def test_content_is_raw(self):
+        # '#' and quotes inside a block are content, not comments or strings; deeper indentation is kept.
+        text = 'run: |  # header comment is fine\n  echo "#1 it\'s"  # still content\n    nested\n'
+        self.assertEqual(loads(text), {"run": 'echo "#1 it\'s"  # still content\n  nested\n'})
+
+    def test_blank_lines_inside(self):
+        self.assertEqual(loads("a: |\n  x\n\n  y\n"), {"a": "x\n\ny\n"})
+
+    def test_in_sequences(self):
+        text = "steps:\n  - run: |\n      make\n      make test\n    name: build\n  - |\n    bare\n"
+        self.assertEqual(loads(text), {"steps": [{"run": "make\nmake test\n", "name": "build"}, "bare\n"]})
+
+    def test_empty_block(self):
+        self.assertEqual(loads("a: |\nb: 1\n"), {"a": "", "b": 1})
+
+    def test_pipe_inside_plain_value_is_not_a_block(self):
+        self.assertEqual(loads("a: x |\n"), {"a": "x |"})
+
+
+class RealWorkflowTest(unittest.TestCase):
+    """Five real CI workflows (copied 2026-11-20); three use block scalars."""
+
+    def test_all_parse(self):
+        files = sorted((FIX.parent / "workflows").glob("*.ci.yml"))
+        self.assertEqual(len(files), 5)
+        for f in files:
+            with self.subTest(f=f.name):
+                d = load(f)
+                self.assertIn("jobs", d)
+
+    def test_agent_relay_block_run_is_kept_verbatim(self):
+        d = load(FIX.parent / "workflows" / "agent-relay.ci.yml")
+        runs = [s.get("run", "") for job in d["jobs"].values() for s in job.get("steps", [])]
+        self.assertTrue(any('ln -s /usr/bin/python3 "$RUNNER_TEMP/py39/python3"\n' in r for r in runs))
+
+
 class UnsupportedSyntaxTest(unittest.TestCase):
     """Anything outside the subset must fail loudly, never parse to something else."""
 
@@ -114,9 +164,12 @@ class UnsupportedSyntaxTest(unittest.TestCase):
     def test_tag(self):
         self.assertRejected("a: !!str 1\n", 1, "tag")
 
-    def test_block_scalar(self):
-        self.assertRejected("run: |\n  echo hi\n", 1, "block scalar")
-        self.assertRejected("run: >-\n  echo hi\n", 1, "block scalar")
+    def test_block_scalar_indentation_indicator(self):
+        self.assertRejected("run: |2\n  echo hi\n", 1, "indentation indicator")
+        self.assertRejected("run: >1-\n echo hi\n", 1, "indentation indicator")
+
+    def test_block_scalar_line_less_indented_than_its_content(self):
+        self.assertRejected("run: |\n    a\n  b\n", 3, "less indented")
 
     def test_multiple_documents(self):
         self.assertRejected("a: 1\n---\nb: 2\n", 2, "multiple documents")

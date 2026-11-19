@@ -1,0 +1,262 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review, converted_to_draft]
+  # Safety net after merging: the ruleset does not require a PR to be up to date with main (that forced a full rerun
+  # of every open PR after each merge), so the merged result is checked here instead, once per merge.
+  push:
+    branches: [main]
+  # The non-blocking engine smoke and push network suite also run nightly, to catch browser or FCM drift between merges.
+  schedule:
+    - cron: "17 18 * * *"
+  workflow_dispatch:
+
+# Least privilege: the workflow only reads the repository and never uses secrets.
+permissions:
+  contents: read
+
+# A newer push to the same PR, or a newer merge to main, cancels the run it supersedes; only the latest result matters.
+# Scheduled and manual runs get their own group, so a merge never cancels them.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || (github.event_name == 'push' && github.ref || github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+
+jobs:
+  quality:
+    # Gating jobs: every non-draft PR, every push to main, manual runs; not the nightly schedule.
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
+    name: Quality (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        # engines.node is >=22; both lines are LTS.
+        node: ["22", "24"]
+    steps:
+      - name: Check out repository
+        # Actions are pinned to full commit SHAs; the comment names the verified tag.
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up pnpm and Node.js, install with frozen lockfile
+        # pnpm version comes from packageManager in package.json.
+        uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2.1.0
+        with:
+          runtime: node@${{ matrix.node }}
+          cache: true
+          require-lockfile: true
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build
+        run: pnpm build
+
+      - name: Build documentation site
+        run: pnpm docs:build
+
+      - name: Test documentation API status checker
+        run: node --test scripts/check-doc-public-api.test.mjs
+
+      - name: Check documentation against published npm API
+        run: pnpm docs:check-public-api
+
+      - name: Test feature evidence checker
+        run: node --test scripts/check-feature-evidence.test.mjs
+
+      - name: Check feature evidence ledger
+        run: pnpm docs:check-evidence
+
+      - name: Test release branch rules
+        run: pnpm test:release-branch
+
+      - name: Check A6 upload preflight isolation
+        run: node --test scripts/portable-a6-cloudflare.test.mjs
+
+      - name: Test
+        run: pnpm test
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Dependency audit (report only)
+        # Advisories are reported but do not fail the job; handling follows docs/operations/dependency-changes.md.
+        continue-on-error: true
+        run: pnpm audit --ignore-registry-errors
+
+  windows-build:
+    # Real Windows path handling is required for nested Vite assetsDir values and pnpm subprocesses.
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'
+    name: Windows build (Node 24)
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up pnpm and Node.js, install with frozen lockfile
+        uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2.1.0
+        with:
+          runtime: node@24
+          cache: true
+          require-lockfile: true
+
+      - name: Build workspace
+        run: pnpm build
+
+      - name: Test Windows bundle paths
+        run: pnpm --filter @pwa-platform/vite test
+
+      - name: Test Windows entry recovery
+        run: pnpm --filter @pwa-platform/entry-resilience test
+
+      - name: Test pnpm subprocess launch
+        run: node --test scripts/spawn-pnpm.test.mjs
+
+  browser:
+    # Gating jobs: every non-draft PR, every push to main, manual runs; not the nightly schedule.
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
+    name: Browser (Google Chrome stable, Node 24)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up pnpm and Node.js, install with frozen lockfile
+        uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2.1.0
+        with:
+          runtime: node@24
+          cache: true
+          require-lockfile: true
+
+      - name: Show preinstalled Google Chrome version
+        # Browser tests use this runner-provided Chrome (channel "chrome"); the workflow never downloads browsers.
+        run: google-chrome --version
+
+      - name: Browser tests
+        run: pnpm test:browser
+
+      - name: Newcomer onboarding smoke (packages installed from packed tarballs, offline)
+        run: pnpm test:onboarding-smoke
+
+      - name: Upload Playwright traces on failure
+        # Traces (retain-on-failure) and screenshots from failed browser tests, so a flaky run leaves evidence
+        # (review N7). Only written for failures, so a passing run uploads nothing.
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-traces-chrome
+          path: packages/*/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  edge:
+    # Non-blocking (ADR-0044): the Chrome suite again in the runner's preinstalled Microsoft Edge. Not on pull requests;
+    # after merges, nightly and on demand, like the engine smoke.
+    if: github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    name: Browser (Microsoft Edge stable, non-blocking)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up pnpm and Node.js, install with frozen lockfile
+        uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2.1.0
+        with:
+          runtime: node@24
+          cache: true
+          require-lockfile: true
+
+      - name: Show preinstalled Microsoft Edge version
+        # The runner image ships Edge; the workflow never downloads browsers for this job.
+        run: microsoft-edge --version
+
+      - name: Browser tests in Edge
+        env:
+          PWA_BROWSER_CHANNEL: msedge
+        run: pnpm test:browser
+
+      - name: Upload Playwright traces on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-traces-edge
+          path: packages/*/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  engines:
+    # Non-blocking and costly (browser downloads, real FCM): not on pull requests; after merges, nightly and on demand.
+    if: github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    name: Engine smoke (Playwright WebKit and Firefox, non-blocking)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # ADR-0042: progressive-compatibility evidence only. A failure is recorded but never blocks a pull request.
+    continue-on-error: true
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up pnpm and Node.js, install with frozen lockfile
+        uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2.1.0
+        with:
+          runtime: node@24
+          cache: true
+          require-lockfile: true
+
+      - name: Install WebKit and Firefox system dependencies
+        # The only approved browser download source is Playwright's own CDN for the pinned version (ADR-0042).
+        run: pnpm --filter @pwa-platform/sw-runtime exec playwright install --with-deps webkit firefox
+
+      - name: Engine smoke
+        run: pnpm test:browser:engines
+
+      - name: Upload Playwright traces on failure
+        # Traces (retain-on-failure) and screenshots from failed browser tests, so a flaky run leaves evidence
+        # (review N7). Only written for failures, so a passing run uploads nothing.
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-traces-engines
+          path: packages/*/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  network:
+    # Non-blocking and costly (browser downloads, real FCM): not on pull requests; after merges, nightly and on demand.
+    if: github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    name: Push network suite (real FCM delivery, non-blocking)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # spec/push-module.md: reaches the real push service over the internet, so a failure is recorded but never blocks.
+    continue-on-error: true
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up pnpm and Node.js, install with frozen lockfile
+        uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2.1.0
+        with:
+          runtime: node@24
+          cache: true
+          require-lockfile: true
+
+      - name: Push network suite
+        run: pnpm test:browser:network
