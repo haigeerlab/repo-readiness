@@ -75,7 +75,7 @@
   "gate": {
     "cumulative": true,
     "must": "all",
-    "should": { "ratio": 0.8, "rounding": "floor" },
+    "should": { "rule": "ratio", "ratio": 0.8, "rounding": "floor" },
     "na_majority": "not-reached",
     "unknown": "counts-as-gap"
   },
@@ -116,12 +116,14 @@
 }
 ```
 
+**建议项门槛可配置（`autopr-standard` 要求，#21538）**：`gate.should` 是一条可替换的规则，档位可以用 `tiers[].should` 单独覆盖。v1 支持两种：`{"rule": "ratio", "ratio": 0.8, "rounding": "floor"}`（满足数 ≥ ⌊0.8 × 适用数⌋）和 `{"rule": "max_missing", "max_missing": 1}`（每档最多缺 1 条）。用户还在两者之间选，工具不写死。
+
 **两类尺子与组合（第二稿新增）**
 
 - `kind: base`：通用尺子（v2.0 的 34 条）。`kind: stack`：技术栈尺子，多一个 `stack` 字段（如 `frontend`、`shell-plugin`）和可选的 `detect`（按文件特征给出检测提议，如 `anyOf: ["package.json"]`）。
 - 仓库在 `readiness.yml` 写 `stacks: [shell-plugin]`，monorepo 可按应用写 `apps.site.stacks: [frontend]`。**以声明为准**；没写才用 `detect` 的结果；不一致时报告列"待确认"，不计分。
 - 组合只叠一层：一份 base + 若干 stack；stack 之间不继承。
-- 同一条款 id 只能在一份尺子里定义（技术栈条款用前缀，如 `FE1`、`SH1`，前缀由 `autopr-standard` 定）。别的尺子只能写 `tighten`：档位只升、强度只从 `should` 升 `must`；**不能改适用范围，不能放宽，不能删除**。发现放宽 → 加载失败，退出码 2。放宽只能走仓库的豁免。
+- 同一条款 id 只能在一份尺子里定义（技术栈条款 id 为 `ST-<栈>-<序号>`，如 `ST-FE-1`、`ST-SH-1`，由 `autopr-standard` 定）。别的尺子只能写 `tighten`：档位只升、强度只从 `should` 升 `must`；**不能改适用范围，不能放宽，不能删除**。发现放宽 → 加载失败，退出码 2。放宽只能走仓库的豁免。
 - 门槛规则（`gate`）、档位、信任上限只在 base 里定义；stack 的条款并入同一套档位计算。
 - 技术栈尺子允许必须条款（拷问 Q1）；"每栈不超过 2 条必须"是内容约束，由 `autopr-standard` 定，工具只在 lint 里给警告、不硬拦。
 
@@ -344,23 +346,23 @@ def run(argv: List[str], *, cwd: Path, timeout_s: int, env: Dict[str, str]) -> R
 
 | # | 谁需要 | 需要什么 | 谁提供 | 什么时候要 | 状态 |
 | --- | --- | --- | --- | --- | --- |
-| 1 | 我 | v2.0 的 34 条转写成条款文件格式 v1（`kind: base`） | `autopr-standard`（我先给格式 + 两条示例 + 我的试转写） | `clause-format` 实现前；格式定稿后 | 待发 |
-| 2 | 我 | 判定口径：G2"实际生效规则"是逐项并集还是任一来源；**规则集 bypass 名单里有用户本人或 agent 身份时，G2 还算不算满足**；G10 重跑率和 p90 的算法；G4 的 14 天怎么算；G3"调用了 `check`"怎么认（命令字符串匹配还是 workflow 调用包装器）；G6 是否以 Scorecard 判据为准 | `autopr-standard` | `probes` 实现前 | 待发 |
-| 3 | 我 | 被测仓库入口的调用方式和退出码 | 已有 `interface-contract.md` v1，**我按它实现，不提修改**；只请确认：检测时跑入口用临时 worktree，是否需要在契约里写进"框架可能在只读副本中调用" | `probes` 的 `entry` 探针实现前 | 待发（仅确认） |
+| 1 | 我 | v2.0 的 34 条转写成条款文件格式 v1（`kind: base`） | `autopr-standard`（我先给格式 + 两条示例 + 我的试转写） | `clause-format` 实现前；格式定稿后 | 已答（#21538）：同意格式；我先试转写，对方核对 34 条内容并填 `trust_cap`；建议项门槛做成参数（见 §3.1） |
+| 2 | 我 | 判定口径：G2"实际生效规则"是逐项并集还是任一来源；**规则集 bypass 名单里有用户本人或 agent 身份时，G2 还算不算满足**；G10 重跑率和 p90 的算法；G4 的 14 天怎么算；G3"调用了 `check`"怎么认（命令字符串匹配还是 workflow 调用包装器）；G6 是否以 Scorecard 判据为准 | `autopr-standard` | `probes` 实现前 | 已答（#21538）：G2 逐项并集；只认 `active`；**bypass 名单里有 agent 身份或任何应用 / 集成 → `gap`；只有用户本人或管理员角色（且 agent 身份不是管理员）→ `met` 并标注「存在绕过」**；读不到 → `unknown`。G10 按 workflow run 计，只统计产生必需检查的 workflow，近 30 天 main + PR；重跑就通过 = 同一 run `attempt > 1`、最终 success、之前某次失败；p90 样本 = 每个 run 从开始到最后一个必需检查 job 结束。G4 = 检测时刻往回滚动 336 小时。G3 = run 步骤含 `check.run` 命令（空白规范化后子串匹配）或调用了包装器 |
+| 3 | 我 | 被测仓库入口的调用方式和退出码 | 已有 `interface-contract.md` v1，**我按它实现，不提修改**；只请确认：检测时跑入口用临时 worktree，是否需要在契约里写进"框架可能在只读副本中调用" | `probes` 的 `entry` 探针实现前 | 已答（#21538）：契约 §4 将加一句「框架可能在被测提交的临时副本中调用入口；入口不得依赖本机固定路径、未提交文件或当前分支名」 |
 | 4 | `autopr-design` | **【阻塞】** 接入结论格式 v1（§3.3），准入脚本据此定信任上限；还要对方给出准入脚本读取结论的时间 | 我提供格式，对方给时间 | 结论 schema 定稿后立即通知 | 已答（#21530）：字段够用，补 `default_branch` 和结论的发布证明；准入取 min(结论 trust_cap, trust.yml, 降级 issue)，结论缺失 / 过期 / 解析失败 / 工具版本不在允许列表 → L0；`valid_until` 14 天。**时间待用户**：Auto PR 设计未批准、准入脚本未写 |
 | 5 | 双方 | **【阻塞】** 每周复检和掉档：谁跑复检（Actions 定时 vs 本机编排会话）、声明类条款在 CI 里无法裁决时是否允许沿用上次结论、谁判"连续两次不满足"（我在 `diff` 里给出信号，还是 degrade 脚本自己比）、谁开 `autopr:readiness-drop`、报告和结论写到仓库哪里 | 和 `autopr-design` 共同定 | `recheck` 实现前 | 已答（#21530）：Actions 定时只复检自动条款，声明类沿用到 90 天；**掉档信号由我在 `diff` 里输出**，degrade 只消费、开 `autopr:readiness-drop`；报告做 Actions artifact，摘要写固定 issue，结论放被测仓库 `.github/autopr/readiness-conclusion.json`（T4，升档走 PR 人合并，掉档靠 drop issue） |
 | 6 | 我 | 修复 PR 用谁的身份开、权限边界（设计 Q2） | `autopr-design` | `remedy` 开 PR 功能之前（第一版不开 PR，不阻塞） | 已答：同意第一版不开 PR；身份待用户（设计 Q2） |
 | 7 | 双方 | **【阻塞】** 检测脚本放在哪：本仓库发版，Auto PR 中心仓库按 tag + SHA 引用（我的建议），还是拷进中心仓库 | 和 `autopr-design` 共同定，再报用户 | Spec 批准后尽早 | 已答：同意本仓库发版、中心仓库按 tag + SHA 引用；中心仓库已建：`haigeerlab/autopilot-hub`（私有，临时名，可能改名；#21535），允许列表 `allowed-tools.json` 按语义化版本 + 40 位 SHA 匹配 |
 | 8 | 双方 | monorepo 按应用判档后，准入能否按"文件 → 应用"分别设上限（标准 Q-S3）。我的结论里已经按应用给出档位，用不用由对方定 | `autopr-design` | `conclusion` 定稿前 | 已答：用；准入按"文件 → 应用"映射，跨应用 PR 取最低（设计 r6） |
 | 9 | 双方 | `verify` 证据存放位置（契约 Q-I2）；P1 检测时我从哪里拿证据清单 | `autopr-design` | P1 探针实现前 | 已答：证据评论 `autopr-evidence:v1`，大产物放 Release 资产 / 对象存储留链接 + sha256；P1 的证据清单直接用 `entry-report.schema.json` 的 `verify` 输出 |
-| 10 | `autopr-standard` | **新增**：`readiness.yml` 等 YAML 文件只能用 YAML 子集（A6），请在标准或模板里写明，或接受 JSON 替代 | 我告知，对方确认 | `clause-format` 实现前 | 待发 |
-| 11 | 我 | **新增**：同一条款在多档出现、强度不同（R2、D2、V2、G11）的语义确认：按 `levels` 列表理解，每档单独计数 | `autopr-standard` | 转写前 | 待发 |
-| 12 | 我 | **新增**：`unknown`（无法判定）在打分里按不满足计，且 G2/G5/G6 一次 `unknown` 算不算"一次不满足就掉档" | `autopr-standard` | `detect` 实现前 | 待发 |
-| 13 | 我 | **新增**：G7 要求 owner 在本机信箱登记，CI 里查不到信箱。是否只在本机检测时查、CI 里沿用上次结论 | `autopr-standard` | `probes` 实现前 | 待发 |
+| 10 | `autopr-standard` | **新增**：`readiness.yml` 等 YAML 文件只能用 YAML 子集（A6），请在标准或模板里写明，或接受 JSON 替代 | 我告知，对方确认 | `clause-format` 实现前 | 已答（#21538）：同意，写进标准 §9 和三个模板文件头 |
+| 11 | 我 | **新增**：同一条款在多档出现、强度不同（R2、D2、V2、G11）的语义确认：按 `levels` 列表理解，每档单独计数 | `autopr-standard` | 转写前 | 已答（#21538）：R2、D2 用 `levels` 每档单独计数；V2 只在基础档计一次，G11 只是高档建议（标准里的重复是排版问题，对方会删） |
+| 12 | 我 | **新增**：`unknown`（无法判定）在打分里按不满足计，且 G2/G5/G6 一次 `unknown` 算不算"一次不满足就掉档" | `autopr-standard` | `detect` 实现前 | 已答（#21538）：`unknown` 按不满足计、单列；只阻止升档和接入，不触发 G2 / G5 / G6 一次掉档；连续两次 `unknown` 开 issue；掉档只看「不满足」 |
+| 13 | 我 | **新增**：G7 要求 owner 在本机信箱登记，CI 里查不到信箱。是否只在本机检测时查、CI 里沿用上次结论 | `autopr-standard` | `probes` 实现前 | 已答（#21538）：只在本机查；CI 沿用上次结论，上次结论超过 90 天按 `unknown` |
 | 14 | `autopr-design` | **新增**：自我维护防火墙——报告和结论里带工具版本与 SHA；中心仓库要维护"允许的工具版本"列表 | 我告知，对方定落点 | 结论格式定稿时 | 已答：同意，允许列表放中心仓库，T4 |
 | 15 | 我 | **新增**：X1 要读中心仓库的 `contracts.yml`；K4、G12 要读 Auto PR 的纠正事件 issue、晋升 PR、metrics workflow 记录。需要这些的位置、标签名和格式 | `autopr-design` | 标准档 / 高档条款实现前（不阻塞基础档） | 已答：`contracts.yml` 在中心仓库 `haigeerlab/autopilot-hub` 根目录；纠正事件 issue 标签 `correction` + `correction:<类名>`；晋升 PR 标题 `fix(guard): <类名>`；度量看固定 issue 标签 `autopr:metrics` + 产物 `autopr-metrics.json` |
 | 16 | 我 | **新增**：G7 骨架里的 `risk-tiers.yml` 要 `extends` 类别模板，模板在中心仓库；生成补丁时需要模板的位置和版本 | `autopr-design` | `remedy` 实现前 | 已答：草案在 autopr-design worktree 的 `config/risk-tiers.categories.example.yml`（未提交，只读；`extends` 结构不变） |
-| 17 | 我 | **第二稿新增**：技术栈尺子的内容——第一批只要**前端**、**Shell 插件**两份（后端 / Go / Rust 不写）；技术栈条款的 id 前缀；"每栈必须条款不超过 2 条、只收'用了就必然该有'的"这条门槛是否接受；`readiness.yml` 加 `stacks` 字段（含按应用写）。调研摘出的候选条款见调研汇总 §1，供参考 | `autopr-standard` | 格式定稿后；基础档试点不依赖技术栈尺子，不阻塞 | 待发 |
+| 17 | 我 | **第二稿新增**：技术栈尺子的内容——第一批只要**前端**、**Shell 插件**两份（后端 / Go / Rust 不写）；技术栈条款的 id 前缀；"每栈必须条款不超过 2 条、只收'用了就必然该有'的"这条门槛是否接受；`readiness.yml` 加 `stacks` 字段（含按应用写）。调研摘出的候选条款见调研汇总 §1，供参考 | `autopr-standard` | 格式定稿后；基础档试点不依赖技术栈尺子，不阻塞 | 已答（#21538）：必须项只收「用了这项技术、不做就等于判定不成立」的，每栈最多 2 条；id 前缀 `ST-<栈>-<序号>`（FE、SH，预留 BE、GO、RS）；Python 检查脚本归 SH；v2.0 结构批准后出 FE、SH 草案 |
 | 18 | 双方 | **第二稿新增【阻塞】**：试点仓库对齐——我这边是 agent-relay（接进 Auto PR）+ pwa-platform（只验证不误判）；`autopr-design` 设计 P1 写的是 tier-guard，其 Q15 建议改 agent-relay。双方确认同一个试点后报用户 | `autopr-design` | Spec 批准后立即 | 已答：双方一致 agent-relay 试点、pwa-platform 验证不误判；待用户最终确认 |
 
 ## 12. 成功标准（整体）

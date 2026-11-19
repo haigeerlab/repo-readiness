@@ -28,7 +28,7 @@
   - 依赖：T2、T3。文件：`schemas/clauses.v1.json`、`src/repo_readiness/clauses/`、`tests/test_clauses.py`、`tests/fixtures/rulesets/toy-base.json`。
 
 - [ ] **T5 打分函数**（S）
-  - 做什么：纯函数：输入条款集 + 每条结果，输出档位、各档必须 / 建议计数、下一档差什么。规则来自尺子的 `gate`：必须全满足；建议 ≥ ⌊比例 × 适用数⌋；逐档累进；N/A 过半判未达到；`unknown` 按不满足计但单列；豁免过期按不满足、不可豁免条款的豁免无效；`enforce_from` 之前按建议计；应用取最低。
+  - 做什么：纯函数：输入条款集 + 每条结果，输出档位、各档必须 / 建议计数、下一档差什么。规则来自尺子的 `gate`：必须全满足；建议项按尺子里的规则（`ratio` 向下取整，或 `max_missing` 每档最多缺 n 条，档位可单独覆盖）；逐档累进；N/A 过半判未达到；`unknown` 按不满足计但单列；豁免过期按不满足、不可豁免条款的豁免无效；`enforce_from` 之前按建议计；应用取最低。
   - 验收：表驱动测试覆盖上述每条规则，且每条都有一个"刚好差一点"的反例。
   - 依赖：T4。文件：`src/repo_readiness/detect/score.py`、`tests/test_score.py`。
 
@@ -61,12 +61,12 @@
   - 依赖：T6。文件：`src/repo_readiness/platform/github.py`、`tests/test_github_adapter.py`。
 
 - [ ] **T10 G2 生效规则探针**（M）
-  - 做什么：`github.effective_branch_rules`：旧版保护 ∪ 规则集逐项并集；只认 `enforcement: active`；bypass 名单记入证据；读不到判 `unknown`。
+  - 做什么：`github.effective_branch_rules`：旧版保护 ∪ 规则集逐项并集；只认 `enforcement: active`；bypass 名单：含 agent 身份或任何应用 / 集成判 `gap`，只有用户本人或管理员角色判 `met` 并标注「存在绕过」；读不到判 `unknown`。
   - 验收：四类真实返回录制成夹具——pwa-platform 规则集（`met`）、agent-relay 旧版保护未要求 PR（`gap`）、规则集 `evaluate`（`gap`，构造）、权限不足（`unknown`，构造）——结论全对。
   - 依赖：T9。文件：`src/repo_readiness/probes/github_rules.py`、`tests/test_probe_g2.py`、`tests/fixtures/github/`。
 
 - [ ] **T11 G1 / G4 / G5 / G6 设置类探针**（M）
-  - 做什么：仓库归属与默认分支（G1）；main 最近一次 CI 结论与日期（G4，按 UTC 日历日，口径待 #2）；秘密扫描与推送保护（G5，私有仓库读不到时判 `unknown` 并提示 CI 等效检查）；workflow 默认权限与"能否批准 PR"（G6 的设置部分）。
+  - 做什么：仓库归属与默认分支（G1）；main 最近一次 CI 结论与日期（G4，从检测时刻往回滚动 336 小时）；秘密扫描与推送保护（G5，私有仓库读不到时判 `unknown` 并提示 CI 等效检查）；workflow 默认权限与"能否批准 PR"（G6 的设置部分）。
   - 验收：每个探针一正一反 + 一个读不到的夹具。
   - 依赖：T9。文件：`src/repo_readiness/probes/github_repo.py`、`tests/test_probe_repo.py`。
 
