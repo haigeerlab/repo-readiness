@@ -41,6 +41,7 @@ CATALOG = {
     # Static analysis of .github/workflows/*.yml (no execution).
     "workflow.pr_runs_check": _params([], entry=_STR),
     "workflow.no_dangerous_triggers": _params([]),
+    "workflow.actions_pinned": _params([]),
     # Structured config files in the repository.
     "config.parses": _params(["path", "format"], path=_STR, format={"enum": ["yaml", "json"]}),
     "risk.template_paths_kept": _params(["path"], path=_STR),

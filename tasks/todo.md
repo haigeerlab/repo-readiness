@@ -74,7 +74,11 @@
   - 验收：每个探针一正一反 + 一个读不到的夹具。
   - 依赖：T9。文件：`src/repo_readiness/probes/github_repo.py`、`tests/test_probe_repo.py`。
 
-- [ ] **T12 workflow 静态分析**（M）
+- [x] **T12 workflow 静态分析**（M）
+  - 完成说明：先确认风险成立（5 个真实 workflow 有 3 个用多行块），经用户同意扩展 YAML 子集支持 `|` / `>`；实现 G3（`workflow.pr_runs_check`）、G6 触发部分（`workflow.no_dangerous_triggers`）、G9（`workflow.actions_pinned`），G9 在 5 个真实 workflow 上与初评一致。**G8 拆为 T12b**。注意：G3 要求 interface.yml 登记的 check 命令与 CI 的 run 步骤对得上（空白规范化后子串匹配，#21538），目前所有仓库都没有 interface.yml，G3 会判不满足，和初评的 ✅ 不同——T16 对照时按"新要求"说明。另外 agent-relay 的 CI 跑的是 `bash scripts/validate.sh`，它的 interface.yml 必须照此登记，写成 `/bin/bash …` 会对不上（T21 生成骨架时据此预填）。
+- [ ] **T12b G8 必需检查无软失败**（M，标准档，不影响试点基础档）
+  - 做什么：从 G2 已取到的旧版保护 `required_status_checks` 与规则集 `required_status_checks` 参数得到必需检查名单；把 workflow 的 job（含矩阵展开名 `name (…)`）对到名单；必需 job 上有 `continue-on-error: true` 判不满足；名单为空判不满足。"非必需任务软失败要写原因"靠注释，静态读不到，记为说明。
+  - 依赖：T10、T12。
   - 做什么：解析 `.github/workflows/*.yml`（YAML 子集；超出子集的 workflow 判 `unknown` 并说明）：`pull_request` 触发且调用了 `interface.yml` 登记的 `check`（G3）；`pull_request_target`/`workflow_run` + checkout PR 代码的危险写法（G6）；必需任务上的 `continue-on-error`（G8）；`uses:` 是否 40 位 SHA（G9）。
   - 验收：每类写法正反夹具；agent-relay、pwa-platform 的真实 workflow 文件（只读拷贝）结论与初评一致。
   - 依赖：T2、T6。文件：`src/repo_readiness/probes/workflow.py`、`tests/test_probe_workflow.py`。
