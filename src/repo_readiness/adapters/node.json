@@ -1,0 +1,47 @@
+{
+  "id": "node",
+  "title": "Node.js (npm / pnpm / yarn / bun)",
+  "manifests": [
+    "package.json"
+  ],
+  "dependency_parser": "package_json",
+  "lockfiles": [
+    "package-lock.json",
+    "npm-shrinkwrap.json",
+    "pnpm-lock.yaml",
+    "yarn.lock",
+    "bun.lock",
+    "bun.lockb"
+  ],
+  "frozen_commands": [
+    "npm ci",
+    "pnpm install --frozen-lockfile",
+    "pnpm i --frozen-lockfile",
+    "yarn install --immutable",
+    "yarn install --frozen-lockfile",
+    "yarn --frozen-lockfile",
+    "bun install --frozen-lockfile"
+  ],
+  "frozen_actions": [
+    {
+      "uses": "pnpm/setup",
+      "with": {
+        "require-lockfile": true
+      }
+    }
+  ],
+  "install_commands": [
+    "npm install",
+    "npm i ",
+    "pnpm install",
+    "pnpm i ",
+    "pnpm add",
+    "yarn install",
+    "yarn add",
+    "bun install"
+  ],
+  "install_actions": [
+    "pnpm/setup"
+  ],
+  "note": "Bare `pnpm install` is not counted: whether it freezes the lockfile in CI was not verified against pnpm's docs."
+}

@@ -101,7 +101,8 @@
   - 验收：玩具仓库的入口退出 0 / 1 / 2 / 3 / 超时 / 改动工作区六种情况结论正确；未开 `--exec-entries` 时一律 `unknown` 且列入 `not_evaluated`。
   - 依赖：T6。文件：`src/repo_readiness/probes/entry.py`、`tests/test_probe_entry.py`。
 
-- [ ] **T15 生态适配器 + E1**（S）
+- [x] **T15 生态适配器 + E1**（S）
+  - 完成说明：适配器 `src/repo_readiness/adapters/{node,python}.json`（清单、锁文件、按锁安装的命令与 action、任意安装写法）；清单在所有被 git 跟踪的文件里找（agent-relay 的 package.json 在子目录）；锁文件在清单目录或上级找；pwa-platform 用 `pnpm/setup` + `require-lockfile: true` 安装，按 action 识别。6 个本机真实检出与初评一致。**解读待 autopr-standard 确认**：CI 有 workflow 但根本不装某生态的依赖时（spec-guard 的 locks/local-ticket-ledger），只要锁文件在就判满足并注明；完全没有 CI 仍判不满足。不带 `--frozen-lockfile` 的 `pnpm install` 未核实是否默认冻结，暂不算按锁安装。
   - 做什么：`adapters/*.json`（node、python、无依赖）；E1：有第三方依赖时锁文件入库且 CI 按锁文件安装；无第三方依赖时 N/A。
   - 验收：pwa-platform（`met`）、tier-guard 类无依赖仓库（`na`）、构造的"有依赖无锁文件"（`gap`）。
   - 依赖：T12。文件：`src/repo_readiness/adapters/`、`src/repo_readiness/probes/ecosystem.py`、`tests/test_probe_e1.py`。

@@ -1,0 +1,40 @@
+{
+  "id": "python",
+  "title": "Python (pip / uv / poetry / pipenv / pdm)",
+  "manifests": [
+    "pyproject.toml",
+    "requirements.txt",
+    "requirements-dev.txt",
+    "Pipfile"
+  ],
+  "dependency_parser": "python",
+  "lockfiles": [
+    "uv.lock",
+    "poetry.lock",
+    "Pipfile.lock",
+    "pdm.lock",
+    "pylock.toml"
+  ],
+  "pinned_requirements": true,
+  "frozen_commands": [
+    "uv sync --frozen",
+    "uv sync --locked",
+    "poetry install",
+    "pipenv install --deploy",
+    "pipenv sync",
+    "pdm sync",
+    "pip install -r",
+    "pip install --require-hashes"
+  ],
+  "frozen_actions": [],
+  "install_commands": [
+    "pip install",
+    "uv sync",
+    "uv pip install",
+    "poetry install",
+    "pipenv install",
+    "pdm install"
+  ],
+  "install_actions": [],
+  "note": "A requirements*.txt where every requirement is pinned with == (or carries --hash) counts as a lockfile."
+}

@@ -117,4 +117,4 @@ def evaluate(expr: Dict, ctx: ProbeContext) -> ProbeResult:
 
 
 # Import implementations so they register themselves.
-from repo_readiness.probes import config, entry, fs, github, workflow  # noqa: E402,F401  (registration side effect)
+from repo_readiness.probes import config, ecosystem, entry, fs, github, workflow  # noqa: E402,F401  (registration side effect)
