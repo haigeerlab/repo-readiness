@@ -38,4 +38,4 @@ bin/repo-readiness conclusion verify conclusion.json --report OUT/report.json
 
 ## 状态
 
-`v0.3.0`：基础档探针、裁决交接、复检与掉档信号、尺子组合已完成；修复（T20–T22）与试点（T23–T24）进行中，见 [tasks/todo.md](tasks/todo.md)。
+`v0.3.1`：基础档探针、裁决交接、复检与掉档信号、尺子组合已完成；修复（T20–T22）与试点（T23–T24）进行中，见 [tasks/todo.md](tasks/todo.md)。

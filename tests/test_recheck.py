@@ -133,6 +133,7 @@ class RecheckTest(unittest.TestCase):
         (sig,) = d["drop_signals"]
         self.assertEqual((sig["clause"], sig["rule"], sig["streak"]), ("A", "consecutive", 2))
         self.assertEqual((sig["from_tier"], sig["to_tier"]), ("standard", "basic"))  # one tier down from the old tier
+        self.assertEqual(sig["to_trust_cap"], "L2")  # copied from the ruler (autopr-design #21678)
 
     def test_immediate_clause_drops_on_first_failure(self):
         r1 = self.check()
@@ -141,6 +142,15 @@ class RecheckTest(unittest.TestCase):
         p, d = self.diff(r1, r2)
         self.assertEqual(p.returncode, 1)
         self.assertEqual([(s["clause"], s["rule"]) for s in d["drop_signals"]], [("SAFE", "immediate")])
+
+    def test_dropping_below_the_lowest_tier_uses_the_rulers_below_lowest_cap(self):
+        (self.repo / "S.txt").unlink()
+        r1 = self.check()  # held basic
+        (self.repo / "SAFE.txt").unlink()
+        r2 = self.check(baseline=r1)
+        _, d = self.diff(r1, r2)
+        (sig,) = d["drop_signals"]
+        self.assertEqual((sig["from_tier"], sig["to_tier"], sig["to_trust_cap"]), ("basic", None, "L0"))
 
     def test_failure_above_the_old_tier_never_signals(self):
         (self.repo / "S.txt").unlink()

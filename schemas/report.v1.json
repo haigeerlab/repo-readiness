@@ -178,7 +178,8 @@
       "items": { "type": "object", "required": ["clause", "target", "rule", "streak", "from_tier", "to_tier"], "additionalProperties": false,
                  "properties": { "clause": { "type": "string" }, "target": { "type": "string" },
                                  "rule": { "enum": ["immediate", "consecutive"] }, "streak": { "type": "integer", "minimum": 1 },
-                                 "from_tier": { "type": "string" }, "to_tier": { "type": ["string", "null"] } } }
+                                 "from_tier": { "type": "string" }, "to_tier": { "type": ["string", "null"] },
+                                 "to_trust_cap": { "type": ["string", "null"], "description": "Trust cap of to_tier, copied from the ruler (added in 0.3.1, optional)" } } }
     },
     "baseline": { "anyOf": [{ "type": "string", "pattern": "^[0-9a-f]{64}$" }, { "type": "null" }], "description": "sha256 of the previous report this one was built on" }
   },

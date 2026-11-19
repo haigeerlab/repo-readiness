@@ -59,6 +59,8 @@ def compute(ruleset: Ruleset, results, computed_tier: Optional[str], baseline: O
     count_of = {(s["clause"], s["target"]): s["count"] for s in streaks}
     signals, blocking = [], False
     below = ordered[ordered.index(base_held) - 1] if ordered.index(base_held) > 0 else None
+    # The cap is copied from the ruler so consumers never keep their own tier -> cap table (#21678).
+    below_cap = ruleset.tier(below).trust_cap if below else ruleset.below_lowest.get("trust_cap")
     for r in results:
         c = by_id.get(r.clause)
         if c is None or r.status != "gap":
@@ -70,7 +72,7 @@ def compute(ruleset: Ruleset, results, computed_tier: Optional[str], baseline: O
         how = "immediate" if r.clause in rule["immediate"] else ("consecutive" if n >= rule["consecutive_failures"] else None)
         if how:
             signals.append({"clause": r.clause, "target": r.target, "rule": how, "streak": n,
-                            "from_tier": base_held, "to_tier": below})
+                            "from_tier": base_held, "to_tier": below, "to_trust_cap": below_cap})
     if signals:
         held = below
     elif not blocking and (computed_tier is not None and rank[computed_tier] >= rank[base_held]):
