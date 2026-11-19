@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/haigeerlab/repo-readiness/schemas/conclusion.v1.json",
+  "title": "repo-readiness onboarding conclusion v1",
+  "description": "What a repository reached, on which commit, by which ruler and tool. States facts only; consumers (e.g. the Auto PR admission script) decide what to do with them. See docs/spec/SPEC.md section 3.3. Within v1 fields are only ever added (as optional), never removed or redefined.",
+  "type": "object",
+  "required": ["schema", "repo", "default_branch", "head", "tier", "trust_cap", "apps", "basis", "issued_at",
+               "valid_until", "declarations_expire_at", "waivers", "attestation"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "repo-readiness.conclusion/v1" },
+    "repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" },
+    "default_branch": { "type": "string", "minLength": 1 },
+    "head": { "$ref": "#/$defs/sha" },
+    "tier": {
+      "type": "object",
+      "required": ["id", "name"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": ["string", "null"], "description": "null = below the lowest tier" },
+        "name": { "type": "string" }
+      }
+    },
+    "trust_cap": { "type": ["string", "null"], "description": "Copied from the ruler; the tool never interprets it" },
+    "apps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "path", "tier", "trust_cap"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "path": { "type": "string" },
+          "tier": { "type": ["string", "null"] },
+          "trust_cap": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "basis": {
+      "type": "object",
+      "required": ["report_sha256", "rulesets", "tool"],
+      "additionalProperties": false,
+      "properties": {
+        "report_sha256": { "$ref": "#/$defs/sha256" },
+        "rulesets": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "kind", "version", "sha256"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string" },
+              "kind": { "enum": ["base", "stack"] },
+              "version": { "type": "string" },
+              "sha256": { "$ref": "#/$defs/sha256" }
+            }
+          }
+        },
+        "tool": {
+          "type": "object",
+          "required": ["version", "commit"],
+          "additionalProperties": false,
+          "properties": {
+            "version": { "type": "string", "description": "Semantic version of repo-readiness" },
+            "commit": { "$ref": "#/$defs/sha", "description": "repo-readiness commit the report was produced with" }
+          }
+        }
+      }
+    },
+    "issued_at": { "type": "string", "format": "date-time" },
+    "valid_until": { "type": "string", "format": "date-time", "description": "UTC; consumers treat an expired conclusion as missing" },
+    "declarations_expire_at": { "type": ["string", "null"], "format": "date", "description": "Earliest expiry of declared evidence (null when none)" },
+    "waivers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["clause", "target", "until"],
+        "additionalProperties": false,
+        "properties": {
+          "clause": { "type": "string" },
+          "target": { "type": "string" },
+          "until": { "type": "string", "format": "date" }
+        }
+      }
+    },
+    "attestation": {
+      "type": "object",
+      "required": ["method"],
+      "additionalProperties": false,
+      "properties": {
+        "method": { "type": "string", "description": "\"none\" in v1: the publication proof is not defined yet (interface list #14)" }
+      }
+    }
+  },
+  "$defs": {
+    "sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

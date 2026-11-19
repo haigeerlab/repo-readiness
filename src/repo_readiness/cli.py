@@ -104,7 +104,81 @@ def build_parser() -> argparse.ArgumentParser:
     check.add_argument("--min-tier", help="达到这一档退出 0，否则退出 1")
     check.add_argument("--as-of", help="按这一天（YYYY-MM-DD）判断豁免与生效日期，默认今天（UTC）")
     check.set_defaults(func=_check)
+
+    conc = sub.add_parser("conclude", help="从一份完整的检测报告签发接入结论")
+    conc.add_argument("report", help="report.json 路径")
+    conc.add_argument("--default-branch", required=True, help="被测仓库的默认分支名")
+    conc.add_argument("--repo-name", help="owner/name；报告里没有时必须给")
+    conc.add_argument("--out", required=True, help="写出的结论文件路径")
+    conc.add_argument("--now", help="签发时间（UTC，YYYY-MM-DDTHH:MM:SSZ），默认当前时间；用于复现")
+    conc.set_defaults(func=_conclude)
+
+    cgroup = sub.add_parser("conclusion", help="接入结论相关命令")
+    csub = cgroup.add_subparsers(dest="conclusion_command", metavar="<subcommand>")
+    ver = csub.add_parser("verify", help="核对结论与报告是否一致、是否过期")
+    ver.add_argument("conclusion", help="结论文件路径")
+    ver.add_argument("--report", required=True, help="结论所依据的 report.json")
+    ver.add_argument("--now", help="按这一时刻判断是否过期（UTC，YYYY-MM-DDTHH:MM:SSZ）")
+    ver.set_defaults(func=_conclusion_verify)
     return parser
+
+
+def _now(arg: Optional[str]):
+    import datetime
+
+    from repo_readiness.conclusion import parse_ts
+    return parse_ts(arg) if arg else datetime.datetime.now(datetime.timezone.utc)
+
+
+def _conclude(args: argparse.Namespace) -> int:
+    import json
+    from pathlib import Path
+
+    from repo_readiness.conclusion import ConclusionError, conclude
+    try:
+        now = _now(args.now)
+    except ValueError:
+        return _usage_error("--now expects YYYY-MM-DDTHH:MM:SSZ, got %r" % args.now)
+    try:
+        raw = Path(args.report).read_bytes()
+    except OSError as e:
+        return _usage_error("cannot read report: %s" % e)
+    try:
+        c = conclude(raw, default_branch=args.default_branch, now=now, repo_name=args.repo_name)
+    except ConclusionError as e:
+        for p in e.problems:
+            print("error: %s" % p, file=sys.stderr)
+        print("no conclusion issued", file=sys.stderr)
+        return EXIT_FAIL
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(c, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print("conclusion: %s @ %s · %s（%s）· valid until %s" % (
+        c["repo"], c["head"][:7], c["tier"]["name"], c["trust_cap"], c["valid_until"]))
+    return EXIT_OK
+
+
+def _conclusion_verify(args: argparse.Namespace) -> int:
+    import json
+    from pathlib import Path
+
+    from repo_readiness.conclusion import verify
+    try:
+        now = _now(args.now)
+    except ValueError:
+        return _usage_error("--now expects YYYY-MM-DDTHH:MM:SSZ, got %r" % args.now)
+    try:
+        conclusion = json.loads(Path(args.conclusion).read_text(encoding="utf-8"))
+        raw = Path(args.report).read_bytes()
+    except (OSError, ValueError) as e:
+        return _usage_error("cannot read input: %s" % e)
+    problems = verify(conclusion, raw, now=now)
+    for p in problems:
+        print("error: %s" % p, file=sys.stderr)
+    if problems:
+        return EXIT_FAIL
+    print("ok: conclusion matches report and is valid until %s" % conclusion["valid_until"])
+    return EXIT_OK
 
 
 def main(argv: Optional[List[str]] = None) -> int:

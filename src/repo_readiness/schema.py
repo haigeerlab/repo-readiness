@@ -13,7 +13,8 @@ Deliberate choices:
 
 import datetime
 import re
-from typing import Any, Dict, List, NamedTuple
+from dataclasses import dataclass
+from typing import Any, Dict, List
 
 __all__ = ["SchemaError", "ValidationError", "Validator", "validate"]
 
@@ -34,7 +35,9 @@ class SchemaError(ValueError):
     """The schema itself uses something this validator does not support."""
 
 
-class ValidationError(NamedTuple):
+@dataclass(frozen=True)
+class ValidationError:
+    # A dataclass, not a NamedTuple: a tuple would be unpacked by "%s" % err.
     path: str
     message: str
 

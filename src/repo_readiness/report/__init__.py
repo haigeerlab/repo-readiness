@@ -37,6 +37,10 @@ def tool_info() -> Dict[str, Any]:
     return {"name": "repo-readiness", "version": __version__, "commit": commit, "dirty": dirty}
 
 
+def _cap(ruleset: Ruleset, tier_id: Optional[str]) -> Optional[str]:
+    return ruleset.tier(tier_id).trust_cap if tier_id else ruleset.below_lowest.get("trust_cap")
+
+
 def _check(chk: TierCheck) -> Dict[str, Any]:
     return dataclasses.asdict(chk)
 
@@ -59,7 +63,8 @@ def build(ruleset: Ruleset, scan: Scan, score: Score, *, repo_path: Path, repo_n
         "repo": {"path": str(repo_path), "name": repo_name, "head": head},
         "rulesets": [{"id": ruleset.id, "kind": ruleset.kind, "version": ruleset.version, "sha256": ruleset.sha256}],
         "category": category,
-        "apps": [{"id": a, "path": p, "tier": unit_tier.get(a)} for a, p in apps.items()],
+        "apps": [{"id": a, "path": p, "tier": unit_tier.get(a), "trust_cap": _cap(ruleset, unit_tier.get(a))}
+                 for a, p in apps.items()],
         "tier": tier_ref,
         "next_tier": _check(score.next_tier) if score.next_tier else None,
         "units": [{"unit": u.unit, "tier": u.tier, "checks": [_check(c) for c in u.checks]} for u in score.units],

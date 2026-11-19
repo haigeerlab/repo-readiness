@@ -53,12 +53,13 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "path", "tier"],
+        "required": ["id", "path", "tier", "trust_cap"],
         "additionalProperties": false,
         "properties": {
           "id": { "type": "string" },
           "path": { "type": "string" },
-          "tier": { "type": ["string", "null"] }
+          "tier": { "type": ["string", "null"] },
+          "trust_cap": { "type": ["string", "null"], "description": "Copied from the ruler for this app's tier" }
         }
       }
     },

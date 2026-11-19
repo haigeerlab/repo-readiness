@@ -38,7 +38,7 @@
   - 验收：玩具仓库 + 玩具尺子跑出期望档位；报告通过自身 schema；四种退出码各有用例；`</dev/null` 下不挂起。
   - 依赖：T5。文件：`src/repo_readiness/probes/{__init__,fs}.py`、`src/repo_readiness/report/`、`schemas/report.v1.json`、`tests/test_check_e2e.py`、`tests/fixtures/repos/toy/`。
 
-- [ ] **T7 接入结论 v1：`conclude` 与 `conclusion verify`**（S）
+- [x] **T7 接入结论 v1：`conclude` 与 `conclusion verify`**（S）
   - 做什么：`schemas/conclusion.v1.json`（Spec §3.3 + `default_branch` + `attestation` 占位）；`conclude` 只在报告完整（无待裁决、无探针错误）时出结论，否则退出 1 并说明缺什么；`valid_until` 默认签发 + 14 天；`verify` 核对报告 sha256。
   - 验收：玩具报告能出结论并通过 schema；报告改一个字节后 `verify` 失败；报告不完整时拒绝出结论。L0 结论也能出（未达标但报告完整）。
   - 依赖：T6。文件：`schemas/conclusion.v1.json`、`src/repo_readiness/conclusion/`、`tests/test_conclusion.py`。
