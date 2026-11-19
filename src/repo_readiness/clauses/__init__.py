@@ -75,6 +75,7 @@ class Ruleset:
     waiver: Dict[str, Any] = field(default_factory=dict)
     categories: Tuple[str, ...] = ()
     title: Optional[str] = None
+    drop: Dict[str, Any] = field(default_factory=dict)
 
     def clause(self, clause_id: str) -> Clause:
         for c in self.clauses:
@@ -172,6 +173,9 @@ def lint_data(data: Any) -> List[str]:
     for cid in data.get("waiver", {}).get("non_waivable", []):
         if cid not in ids:
             problems.append("waiver.non_waivable: unknown clause id %r" % cid)
+    for cid in data.get("drop", {}).get("immediate", []):
+        if cid not in ids:
+            problems.append("drop.immediate: unknown clause id %r" % cid)
     return problems
 
 
@@ -212,7 +216,7 @@ def from_data(data: Any, sha256: str = "", source: Union[str, Path] = "<data>") 
         clauses=tuple(_clause(c) for c in data["clauses"]),
         tiers=tuple(Tier(t["id"], t["name"], t["rank"], t.get("trust_cap"), t.get("should")) for t in data["tiers"]),
         below_lowest=data["below_lowest"], gate=data["gate"], waiver=data.get("waiver", {}),
-        categories=tuple(data.get("categories", [])), title=data.get("title"),
+        categories=tuple(data.get("categories", [])), title=data.get("title"), drop=data.get("drop", {}),
     )
 
 

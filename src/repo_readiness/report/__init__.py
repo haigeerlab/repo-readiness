@@ -59,7 +59,7 @@ def build(ruleset: Ruleset, scan: Scan, score: Score, *, repo_path: Path, repo_n
           head: Optional[str], category: Optional[str], apps: Dict[str, str],
           app_paths: Optional[Dict[str, List[str]]] = None, as_of: datetime.date,
           min_tier: Optional[str], now: Optional[datetime.datetime] = None,
-          baseline_sha256: Optional[str] = None) -> Dict[str, Any]:
+          baseline_sha256: Optional[str] = None, recheck: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     now = now or datetime.datetime.now(datetime.timezone.utc)
     if score.tier:
         t = ruleset.tier(score.tier)
@@ -89,6 +89,8 @@ def build(ruleset: Ruleset, scan: Scan, score: Score, *, repo_path: Path, repo_n
         "judgment_requests": scan.judgment_requests,
         "baseline": baseline_sha256,
     }
+    if recheck:
+        report.update(recheck)
     if min_tier:
         rank = {t.id: t.rank for t in ruleset.tiers}
         reached = rank.get(score.tier, 0) if score.tier else 0

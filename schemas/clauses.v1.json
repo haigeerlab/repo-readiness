@@ -64,6 +64,15 @@
       }
     },
     "app_aggregation": { "const": "min" },
+    "drop": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "When a must clause drops the held tier by one (added in 0.3.0, optional; default 2 consecutive failures, none immediate)",
+      "properties": {
+        "consecutive_failures": { "type": "integer", "minimum": 1 },
+        "immediate": { "type": "array", "items": { "$ref": "#/$defs/clause_id" }, "uniqueItems": true }
+      }
+    },
     "clauses": { "type": "array", "items": { "$ref": "#/$defs/clause" } }
   },
   "allOf": [
@@ -75,7 +84,7 @@
       "if": { "properties": { "kind": { "const": "stack" } } },
       "then": {
         "required": ["stack"],
-        "properties": { "tiers": false, "below_lowest": false, "gate": false, "waiver": false, "app_aggregation": false }
+        "properties": { "tiers": false, "below_lowest": false, "gate": false, "waiver": false, "app_aggregation": false, "drop": false }
       }
     }
   ],

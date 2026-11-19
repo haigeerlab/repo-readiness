@@ -148,6 +148,23 @@
         }
       }
     },
+    "held_tier": { "type": ["string", "null"], "description": "Tier the repository holds after drop rules (added in 0.3.0, optional)" },
+    "drop_rule": {
+      "type": "object", "required": ["consecutive_failures", "immediate"], "additionalProperties": false,
+      "properties": { "consecutive_failures": { "type": "integer", "minimum": 1 }, "immediate": { "type": "array", "items": { "type": "string" } } }
+    },
+    "failure_streaks": {
+      "type": "array",
+      "items": { "type": "object", "required": ["clause", "target", "count"], "additionalProperties": false,
+                 "properties": { "clause": { "type": "string" }, "target": { "type": "string" }, "count": { "type": "integer", "minimum": 1 } } }
+    },
+    "drop_signals": {
+      "type": "array",
+      "items": { "type": "object", "required": ["clause", "target", "rule", "streak", "from_tier", "to_tier"], "additionalProperties": false,
+                 "properties": { "clause": { "type": "string" }, "target": { "type": "string" },
+                                 "rule": { "enum": ["immediate", "consecutive"] }, "streak": { "type": "integer", "minimum": 1 },
+                                 "from_tier": { "type": "string" }, "to_tier": { "type": ["string", "null"] } } }
+    },
     "baseline": { "anyOf": [{ "type": "string", "pattern": "^[0-9a-f]{64}$" }, { "type": "null" }], "description": "sha256 of the previous report this one was built on" }
   },
   "$defs": {

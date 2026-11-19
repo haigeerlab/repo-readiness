@@ -151,10 +151,12 @@ def _check(args: argparse.Namespace) -> int:
     outcomes = {(r.clause, r.target): Outcome(r.status, waiver_until=datetime.date.fromisoformat(r.waiver_until)
                                               if r.waiver_until else None) for r in sc.results}
     result = score(ruleset, outcomes, apps=list(apps), today=as_of)
+    from repo_readiness.detect import recheck
+    rc = recheck.compute(ruleset, sc.results, result.tier, baseline, as_of)
     report = rpt.build(ruleset, sc, result, repo_path=repo.resolve(), repo_name=args.repo_name,
                        head=rpt.git_head(repo) if (repo / ".git").exists() else None,
                        category=category, apps=apps, app_paths=app_paths, as_of=as_of,
-                       min_tier=args.min_tier, baseline_sha256=baseline_sha)
+                       min_tier=args.min_tier, baseline_sha256=baseline_sha, recheck=rc)
     text = rpt.summary(report, ruleset)
     rpt.write(report, text, Path(args.out))
     sys.stdout.write(text)
@@ -208,6 +210,12 @@ def build_parser() -> argparse.ArgumentParser:
     check.add_argument("--as-of", help="按这一天（YYYY-MM-DD）判断豁免与生效日期，默认今天（UTC）")
     check.set_defaults(func=_check)
 
+    dif = sub.add_parser("diff", help="对比两份检测报告：变化、档位变化原因、掉档信号（有掉档信号时退出 1）")
+    dif.add_argument("old", help="旧 report.json")
+    dif.add_argument("new", help="新 report.json")
+    dif.add_argument("--json", metavar="FILE", help="把对比结果写成 JSON（repo-readiness.diff/v1）")
+    dif.set_defaults(func=_diff)
+
     conc = sub.add_parser("conclude", help="从一份完整的检测报告签发接入结论")
     conc.add_argument("report", help="report.json 路径")
     conc.add_argument("--default-branch", required=True, help="被测仓库的默认分支名")
@@ -224,6 +232,29 @@ def build_parser() -> argparse.ArgumentParser:
     ver.add_argument("--now", help="按这一时刻判断是否过期（UTC，YYYY-MM-DDTHH:MM:SSZ）")
     ver.set_defaults(func=_conclusion_verify)
     return parser
+
+
+def _diff(args: argparse.Namespace) -> int:
+    import json
+    from pathlib import Path
+
+    from repo_readiness.detect import recheck
+    from repo_readiness.resources import schema_validator
+    reports = []
+    for f in (args.old, args.new):
+        try:
+            data = json.loads(Path(f).read_text(encoding="utf-8"))
+        except (OSError, ValueError) as e:
+            return _usage_error("cannot read %s: %s" % (f, e))
+        problems = schema_validator("report.v1").errors(data)
+        if problems:
+            return _usage_error("%s is not a report.v1: %s" % (f, "; ".join(str(p) for p in problems[:3])))
+        reports.append(data)
+    d = recheck.diff(*reports)
+    if args.json:
+        Path(args.json).write_text(json.dumps(d, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    sys.stdout.write(recheck.render(d))
+    return EXIT_FAIL if d["drop_signals"] else EXIT_OK
 
 
 def _now(arg: Optional[str]):
