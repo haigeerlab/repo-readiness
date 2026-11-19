@@ -57,11 +57,18 @@ class ConcludeTest(unittest.TestCase):
 
     def test_apps_carry_their_own_caps(self):
         r = base_report()
-        r["apps"] = [{"id": "web", "path": "apps/web", "tier": "standard", "trust_cap": "L3"},
-                     {"id": "api", "path": "apps/api", "tier": None, "trust_cap": "L0"}]
+        r["apps"] = [{"id": "web", "root": "apps/web", "paths": ["apps/web/**", "packages/web/**"],
+                      "tier": "standard", "trust_cap": "L3"},
+                     {"id": "api", "root": "apps/api", "paths": ["apps/api/**"], "tier": None, "trust_cap": "L0"}]
         c = conclude(dumped(r), default_branch="main", now=NOW)
-        self.assertEqual(c["apps"], [{"id": "web", "path": "apps/web", "tier": "standard", "trust_cap": "L3"},
-                                     {"id": "api", "path": "apps/api", "tier": None, "trust_cap": "L0"}])
+        # The conclusion carries paths (file -> app mapping for admission), not root.
+        self.assertEqual(c["apps"], [{"id": "web", "paths": ["apps/web/**", "packages/web/**"],
+                                      "tier": "standard", "trust_cap": "L3"},
+                                     {"id": "api", "paths": ["apps/api/**"], "tier": None, "trust_cap": "L0"}])
+        self.assertEqual(verify(c, dumped(r), now=NOW), [])
+        tampered = copy.deepcopy(c)
+        tampered["apps"][0]["paths"] = ["apps/web/**"]
+        self.assertTrue(any("apps" in p for p in verify(tampered, dumped(r), now=NOW)))
 
     def assertRefused(self, report, fragment, **kw):
         with self.assertRaises(ConclusionError) as cm:

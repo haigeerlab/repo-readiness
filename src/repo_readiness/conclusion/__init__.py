@@ -76,7 +76,7 @@ def conclude(report_bytes: bytes, *, default_branch: str, now: datetime.datetime
         "head": head,
         "tier": {"id": report["tier"]["id"], "name": report["tier"]["name"]},
         "trust_cap": report["tier"]["trust_cap"],
-        "apps": [{"id": a["id"], "path": a["path"], "tier": a["tier"], "trust_cap": a["trust_cap"]}
+        "apps": [{"id": a["id"], "paths": a["paths"], "tier": a["tier"], "trust_cap": a["trust_cap"]}
                  for a in report["apps"]],
         "basis": {
             "report_sha256": hashlib.sha256(report_bytes).hexdigest(),
@@ -118,7 +118,9 @@ def verify(conclusion: Any, report_bytes: bytes, *, now: datetime.datetime) -> L
     for k in expect:
         if expect[k] != actual[k]:
             problems.append("%s is %r in the conclusion but %r in the report" % (k, actual[k], expect[k]))
-    if [(a["id"], a["trust_cap"]) for a in conclusion["apps"]] != [(a["id"], a["trust_cap"]) for a in report["apps"]]:
+    def app_key(a):
+        return (a["id"], a["paths"], a["tier"], a["trust_cap"])
+    if [app_key(a) for a in conclusion["apps"]] != [app_key(a) for a in report["apps"]]:
         problems.append("apps differ between conclusion and report")
     if now >= parse_ts(conclusion["valid_until"]):
         problems.append("conclusion expired at %s" % conclusion["valid_until"])

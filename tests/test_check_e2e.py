@@ -112,9 +112,24 @@ class CheckE2ETest(unittest.TestCase):
         _, report = self.check("--category", "plugin", "--app", "web=apps/web", "--app", "api=apps/api")
         self.assertEqual(self.result(report, "T3", "web")["status"], "met")
         self.assertEqual(self.result(report, "T3", "api")["status"], "gap")
+        apps = {a["id"]: (a["root"], a["paths"]) for a in report["apps"]}
+        self.assertEqual(apps, {"web": ("apps/web", ["apps/web/**"]), "api": ("apps/api", ["apps/api/**"])})
         tiers = {a["id"]: a["tier"] for a in report["apps"]}
         self.assertEqual(tiers, {"web": "standard", "api": "basic"})
         self.assertEqual(report["tier"]["id"], "basic")
+
+    def test_app_with_extra_globs(self):
+        make_repo(self.repo, dict(FULL, **{"apps/web/tests/t.txt": "x"}))
+        _, report = self.check("--category", "plugin", "--app", "web=apps/web,packages/web/**,libs/*/web/**")
+        self.assertEqual(report["apps"][0]["root"], "apps/web")
+        self.assertEqual(report["apps"][0]["paths"], ["apps/web/**", "packages/web/**", "libs/*/web/**"])
+
+    def test_bad_app_specs_exit_two(self):
+        make_repo(self.repo, FULL)
+        for spec in ("web", "=apps/web", "web=", "web=../x", "web=/abs", "web=apps/web,../y/**", "web=apps/web,,"):
+            with self.subTest(spec=spec):
+                p, _ = self.check("--app", spec)
+                self.assertEqual(p.returncode, 2, p.stderr)
 
     def test_as_of_controls_enforce_from(self):
         make_repo(self.repo, {k: v for k, v in FULL.items() if k != "LICENSE"})

@@ -26,11 +26,14 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "path", "tier", "trust_cap"],
+        "required": ["id", "paths", "tier", "trust_cap"],
         "additionalProperties": false,
         "properties": {
           "id": { "type": "string" },
-          "path": { "type": "string" },
+          "paths": {
+            "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 },
+            "description": "Globs relative to the repository root that map a changed file to this app: '**' matches across directories, '*' matches within one path segment. A file matching several apps belongs to all of them"
+          },
           "tier": { "type": ["string", "null"] },
           "trust_cap": { "type": ["string", "null"] }
         }

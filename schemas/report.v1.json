@@ -53,11 +53,12 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "path", "tier", "trust_cap"],
+        "required": ["id", "root", "paths", "tier", "trust_cap"],
         "additionalProperties": false,
         "properties": {
           "id": { "type": "string" },
-          "path": { "type": "string" },
+          "root": { "type": "string", "description": "App directory relative to the repository root; app-scoped probes look here" },
+          "paths": { "$ref": "#/$defs/app_paths" },
           "tier": { "type": ["string", "null"] },
           "trust_cap": { "type": ["string", "null"], "description": "Copied from the ruler for this app's tier" }
         }
@@ -136,6 +137,10 @@
   },
   "$defs": {
     "sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "app_paths": {
+      "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 },
+      "description": "Globs relative to the repository root that map files to this app: '**' crosses directories, '*' matches within one path segment; the first entry is always ROOT/**"
+    },
     "clause_target": {
       "type": "object",
       "required": ["clause", "target"],

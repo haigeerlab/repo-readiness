@@ -28,6 +28,12 @@ def _usage_error(msg: str) -> int:
     return EXIT_USAGE
 
 
+def _relative_path_ok(p: str) -> bool:
+    from pathlib import PurePosixPath
+    pure = PurePosixPath(p)
+    return bool(p.strip()) and not pure.is_absolute() and ".." not in pure.parts
+
+
 def _check(args: argparse.Namespace) -> int:
     import datetime
     from pathlib import Path
@@ -53,14 +59,22 @@ def _check(args: argparse.Namespace) -> int:
     if args.category and ruleset.categories and args.category not in ruleset.categories:
         return _usage_error("--category %r is not a category of %s (categories: %s)"
                             % (args.category, ruleset.id, ", ".join(ruleset.categories)))
-    apps = {}
+    apps = {}  # app id -> root directory (where app-scoped probes look)
+    app_paths = {}  # app id -> globs mapping files to the app (root/** first)
     for spec in args.app or []:
-        app_id, sep, path = spec.partition("=")
-        if not sep or not app_id or not path:
-            return _usage_error("--app expects NAME=PATH, got %r" % spec)
+        app_id, sep, rest = spec.partition("=")
+        parts = rest.split(",") if rest else []
+        if not sep or not app_id or not parts:
+            return _usage_error("--app expects NAME=ROOT[,GLOB...], got %r" % spec)
         if app_id in apps:
             return _usage_error("--app %r given twice" % app_id)
-        apps[app_id] = path.rstrip("/")
+        for part in parts:
+            if not _relative_path_ok(part):
+                return _usage_error("--app %r: %r must be a non-empty path relative to the repository root, "
+                                    "without '..'" % (app_id, part))
+        root = parts[0].rstrip("/")
+        apps[app_id] = root
+        app_paths[app_id] = [root + "/**"] + parts[1:]
     try:
         as_of = datetime.date.fromisoformat(args.as_of) if args.as_of else datetime.datetime.now(datetime.timezone.utc).date()
     except ValueError:
@@ -71,7 +85,8 @@ def _check(args: argparse.Namespace) -> int:
     result = score(ruleset, outcomes, apps=list(apps), today=as_of)
     report = rpt.build(ruleset, sc, result, repo_path=repo.resolve(), repo_name=args.repo_name,
                        head=rpt.git_head(repo) if (repo / ".git").exists() else None,
-                       category=args.category, apps=apps, as_of=as_of, min_tier=args.min_tier)
+                       category=args.category, apps=apps, app_paths=app_paths, as_of=as_of,
+                       min_tier=args.min_tier)
     text = rpt.summary(report, ruleset)
     rpt.write(report, text, Path(args.out))
     sys.stdout.write(text)
@@ -99,7 +114,9 @@ def build_parser() -> argparse.ArgumentParser:
     check.add_argument("--clauses", required=True, help="条款文件路径")
     check.add_argument("--out", required=True, help="输出目录（写 report.json、summary.md）")
     check.add_argument("--category", help="仓库类别，例如 plugin、frontend")
-    check.add_argument("--app", action="append", metavar="NAME=PATH", help="monorepo 的应用及其路径前缀，可重复")
+    check.add_argument("--app", action="append", metavar="NAME=ROOT[,GLOB...]",
+                       help="monorepo 的应用：ROOT 是应用目录（应用级探针在此查找），其后可加通配符，"
+                            "与 ROOT/** 一起把文件对应到应用；可重复")
     check.add_argument("--repo-name", help="owner/name，写进报告")
     check.add_argument("--min-tier", help="达到这一档退出 0，否则退出 1")
     check.add_argument("--as-of", help="按这一天（YYYY-MM-DD）判断豁免与生效日期，默认今天（UTC）")

@@ -46,7 +46,8 @@ def _check(chk: TierCheck) -> Dict[str, Any]:
 
 
 def build(ruleset: Ruleset, scan: Scan, score: Score, *, repo_path: Path, repo_name: Optional[str],
-          head: Optional[str], category: Optional[str], apps: Dict[str, str], as_of: datetime.date,
+          head: Optional[str], category: Optional[str], apps: Dict[str, str],
+          app_paths: Optional[Dict[str, List[str]]] = None, as_of: datetime.date,
           min_tier: Optional[str], now: Optional[datetime.datetime] = None) -> Dict[str, Any]:
     now = now or datetime.datetime.now(datetime.timezone.utc)
     if score.tier:
@@ -63,8 +64,9 @@ def build(ruleset: Ruleset, scan: Scan, score: Score, *, repo_path: Path, repo_n
         "repo": {"path": str(repo_path), "name": repo_name, "head": head},
         "rulesets": [{"id": ruleset.id, "kind": ruleset.kind, "version": ruleset.version, "sha256": ruleset.sha256}],
         "category": category,
-        "apps": [{"id": a, "path": p, "tier": unit_tier.get(a), "trust_cap": _cap(ruleset, unit_tier.get(a))}
-                 for a, p in apps.items()],
+        "apps": [{"id": a, "root": root, "paths": (app_paths or {}).get(a) or [root + "/**"],
+                  "tier": unit_tier.get(a), "trust_cap": _cap(ruleset, unit_tier.get(a))}
+                 for a, root in apps.items()],
         "tier": tier_ref,
         "next_tier": _check(score.next_tier) if score.next_tier else None,
         "units": [{"unit": u.unit, "tier": u.tier, "checks": [_check(c) for c in u.checks]} for u in score.units],
