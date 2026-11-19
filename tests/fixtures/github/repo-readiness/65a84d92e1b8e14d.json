@@ -1,0 +1,19 @@
+{
+  "status": "not_found",
+  "http_status": 404,
+  "data": {
+    "message": "Branch not protected",
+    "documentation_url": "https://docs.github.com/rest/branches/branch-protection#get-branch-protection",
+    "status": "404"
+  },
+  "message": "Branch not protected",
+  "headers": {
+    "content-type": "application/json; charset=utf-8",
+    "x-ratelimit-limit": "5000",
+    "x-ratelimit-remaining": "4948",
+    "x-ratelimit-reset": "1795104765",
+    "x-ratelimit-resource": "core",
+    "x-ratelimit-used": "52"
+  },
+  "path": "repos/haigeerlab/repo-readiness/branches/main/protection"
+}

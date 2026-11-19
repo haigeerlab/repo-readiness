@@ -62,7 +62,8 @@
   - 验收：非 GET 调用被拒；回放模式不联网；权限不足的返回被识别。
   - 依赖：T6。文件：`src/repo_readiness/platform/github.py`、`tests/test_github_adapter.py`。
 
-- [ ] **T10 G2 生效规则探针**（M）
+- [x] **T10 G2 生效规则探针**（M）
+  - 完成说明：三个真实仓库的结论与初评一致（pwa-platform met、agent-relay 只缺 PR、repo-readiness 三项都缺）。绕过名单的分类里有三处是我的保守取舍，待 `autopr-standard` 确认：Team 判阻断；仓库角色只有 admin（id 5）算管理员，其余角色判阻断；个人账号（User）算"存在绕过"而非阻断（agent 身份若是机器账号，这一条要改）。
   - 做什么：`github.effective_branch_rules`：旧版保护 ∪ 规则集逐项并集；只认 `enforcement: active`；bypass 名单：含 agent 身份或任何应用 / 集成判 `gap`，只有用户本人或管理员角色判 `met` 并标注「存在绕过」；读不到判 `unknown`。
   - 验收：四类真实返回录制成夹具——pwa-platform 规则集（`met`）、agent-relay 旧版保护未要求 PR（`gap`）、规则集 `evaluate`（`gap`，构造）、权限不足（`unknown`，构造）——结论全对。
   - 依赖：T9。文件：`src/repo_readiness/probes/github_rules.py`、`tests/test_probe_g2.py`、`tests/fixtures/github/`。

@@ -1,0 +1,15 @@
+{
+  "status": "ok",
+  "http_status": 200,
+  "data": [],
+  "message": "",
+  "headers": {
+    "content-type": "application/json; charset=utf-8",
+    "x-ratelimit-limit": "5000",
+    "x-ratelimit-remaining": "4949",
+    "x-ratelimit-reset": "1795104765",
+    "x-ratelimit-resource": "core",
+    "x-ratelimit-used": "51"
+  },
+  "path": "repos/haigeerlab/agent-relay/rules/branches/main"
+}
