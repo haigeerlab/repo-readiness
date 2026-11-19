@@ -17,7 +17,7 @@
   - 验收：标准侧 `readiness.example.v2.yml`、`interface.example.yml`（拷成测试夹具）解析结果与手写期望一致；6 类不支持语法各有用例，抛出解析错误。
   - 依赖：T1。文件：`src/repo_readiness/yamlsub.py`、`tests/test_yamlsub.py`、`tests/fixtures/yaml/`。
 
-- [ ] **T3 内置 JSON Schema 校验器**（S）
+- [x] **T3 内置 JSON Schema 校验器**（S）
   - 做什么：只实现我们 schema 用到的 2020-12 关键字（`type`、`required`、`properties`、`additionalProperties`、`enum`、`const`、`pattern`、`items`、`minimum`/`maximum`、`$ref` 到本地 `$defs`、`oneOf`/`anyOf`），用到未实现的关键字时直接报错（防止"看着通过"）。
   - 验收：标准侧 `entry-report.schema.json` 能被加载并校验正反样例；未实现关键字报错。
   - 依赖：T1。文件：`src/repo_readiness/schema.py`、`tests/test_schema.py`。
