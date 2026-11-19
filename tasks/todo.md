@@ -32,7 +32,8 @@
   - 验收：表驱动测试覆盖上述每条规则，且每条都有一个"刚好差一点"的反例。
   - 依赖：T4。文件：`src/repo_readiness/detect/score.py`、`tests/test_score.py`。
 
-- [ ] **T6 纵向切片：`check` 端到端**（M）
+- [x] **T6 纵向切片：`check` 端到端**（M）
+  - 完成说明：退出码 0 / 1 / 2 已测；退出码 3（环境未就绪）在 T6 还没有能触发的场景，随 T9（GitHub 适配层：`gh` 未登录、网络不通）补测。
   - 做什么：探针运行时框架 + `fs` 探针（文件存在、glob、内容匹配）；`check` 子命令：加载尺子 → 跑探针 → 打分 → 写 `report.json`（`schemas/report.v1.json`）和 `summary.md`（≤ 30 行）；`--min-tier` 退出码 0 / 1 / 2 / 3。
   - 验收：玩具仓库 + 玩具尺子跑出期望档位；报告通过自身 schema；四种退出码各有用例；`</dev/null` 下不挂起。
   - 依赖：T5。文件：`src/repo_readiness/probes/{__init__,fs}.py`、`src/repo_readiness/report/`、`schemas/report.v1.json`、`tests/test_check_e2e.py`、`tests/fixtures/repos/toy/`。

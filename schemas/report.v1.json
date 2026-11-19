@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/haigeerlab/repo-readiness/schemas/report.v1.json",
+  "title": "repo-readiness detection report v1",
+  "description": "Machine-readable result of `repo-readiness check`. See docs/spec/SPEC.md section 3.2. Fields are only ever added, never removed, within v1.",
+  "type": "object",
+  "required": ["schema", "tool", "generated_at", "as_of", "repo", "rulesets", "category", "apps", "tier",
+               "next_tier", "units", "results", "unknown", "invalid_waivers", "not_evaluated", "errors",
+               "judgment_requests", "baseline"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "repo-readiness.report/v1" },
+    "tool": {
+      "type": "object",
+      "required": ["name", "version", "commit", "dirty"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "const": "repo-readiness" },
+        "version": { "type": "string" },
+        "commit": { "anyOf": [{ "$ref": "#/$defs/sha" }, { "type": "null" }] },
+        "dirty": { "type": ["boolean", "null"], "description": "Tool checkout had uncommitted changes; a release-built report has false" }
+      }
+    },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "as_of": { "type": "string", "format": "date", "description": "Date used for waivers and enforce_from" },
+    "repo": {
+      "type": "object",
+      "required": ["path", "name", "head"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string" },
+        "name": { "type": ["string", "null"], "description": "owner/name when known" },
+        "head": { "anyOf": [{ "$ref": "#/$defs/sha" }, { "type": "null" }] }
+      }
+    },
+    "rulesets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "version", "sha256"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "kind": { "enum": ["base", "stack"] },
+          "version": { "type": "string" },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    },
+    "category": { "type": ["string", "null"] },
+    "apps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "path", "tier"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "path": { "type": "string" },
+          "tier": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "tier": { "$ref": "#/$defs/tier_ref" },
+    "target": {
+      "type": "object",
+      "required": ["tier", "met"],
+      "additionalProperties": false,
+      "properties": { "tier": { "type": "string" }, "met": { "type": "boolean" } }
+    },
+    "next_tier": { "anyOf": [{ "$ref": "#/$defs/tier_check" }, { "type": "null" }] },
+    "units": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["unit", "tier", "checks"],
+        "additionalProperties": false,
+        "properties": {
+          "unit": { "type": "string" },
+          "tier": { "type": ["string", "null"] },
+          "checks": { "type": "array", "items": { "$ref": "#/$defs/tier_check" } }
+        }
+      }
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["clause", "target", "status", "evidence", "missing", "error", "source", "fingerprint"],
+        "additionalProperties": false,
+        "properties": {
+          "clause": { "type": "string" },
+          "target": { "type": "string" },
+          "status": { "enum": ["met", "gap", "na", "waived", "unknown"] },
+          "evidence": { "type": "array", "items": { "type": "string" } },
+          "missing": { "type": ["string", "null"] },
+          "error": { "type": ["string", "null"] },
+          "source": { "enum": ["scan", "judge", "carried-over"] },
+          "fingerprint": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    },
+    "unknown": { "type": "array", "items": { "$ref": "#/$defs/clause_target" } },
+    "invalid_waivers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["clause", "target", "reason"],
+        "additionalProperties": false,
+        "properties": { "clause": { "type": "string" }, "target": { "type": "string" }, "reason": { "type": "string" } }
+      }
+    },
+    "not_evaluated": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["clause", "reason"],
+        "additionalProperties": false,
+        "properties": { "clause": { "type": "string" }, "target": { "type": "string" }, "reason": { "type": "string" } }
+      }
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["clause", "target", "message"],
+        "additionalProperties": false,
+        "properties": { "clause": { "type": "string" }, "target": { "type": "string" }, "message": { "type": "string" } }
+      }
+    },
+    "judgment_requests": { "type": "array", "description": "Clauses waiting for an agent judgment (filled from a later release)" },
+    "baseline": { "type": ["string", "null"], "description": "sha256 of the previous report this one was built on" }
+  },
+  "$defs": {
+    "sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "clause_target": {
+      "type": "object",
+      "required": ["clause", "target"],
+      "additionalProperties": false,
+      "properties": { "clause": { "type": "string" }, "target": { "type": "string" } }
+    },
+    "tier_ref": {
+      "type": "object",
+      "required": ["id", "name", "trust_cap"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": ["string", "null"], "description": "null = below the lowest tier" },
+        "name": { "type": "string" },
+        "trust_cap": { "type": ["string", "null"] }
+      }
+    },
+    "tier_check": {
+      "type": "object",
+      "required": ["tier", "reached", "must_total", "must_met", "must_na", "must_failed", "should_applicable",
+                   "should_met", "should_required", "should_failed", "na_majority", "grace"],
+      "additionalProperties": false,
+      "properties": {
+        "tier": { "type": "string" },
+        "reached": { "type": "boolean" },
+        "must_total": { "type": "integer", "minimum": 0 },
+        "must_met": { "type": "integer", "minimum": 0 },
+        "must_na": { "type": "integer", "minimum": 0 },
+        "must_failed": { "type": "array", "items": { "type": "string" } },
+        "should_applicable": { "type": "integer", "minimum": 0 },
+        "should_met": { "type": "integer", "minimum": 0 },
+        "should_required": { "type": "integer", "minimum": 0 },
+        "should_failed": { "type": "array", "items": { "type": "string" } },
+        "na_majority": { "type": "boolean" },
+        "grace": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}
