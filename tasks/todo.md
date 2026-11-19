@@ -91,8 +91,9 @@
   - 依赖：T2、T6。文件：`src/repo_readiness/probes/{config,declare}.py`、`tests/test_probe_declare.py`。
 
 ### 里程碑 M1：agent-relay 第一份接入结论
-- [ ] 用 T8 试转写 + T10–T13 只读检测 agent-relay，`check` → `conclude`（预计 L0）
-- [ ] 结论与报告放在本仓库输出目录；**给用户看摘要后**发给 `autopr-design`。写进 agent-relay 仓库由用户和 `agent-relay-owner` 决定
+- [x] 用 T8 试转写 + T10–T13 只读检测 agent-relay，`check` → `conclude`（预计 L0）
+  - 完成说明：先发布 `v0.2.0`（`c77aaba`，用户同意）；用其干净检出只读检测 agent-relay 远端 main `66abdd9`：未达标 L0，G1/G4/G5/G6 满足，G2 只缺 PR，G3/G7/D1/R1 缺登记文件与指令说明，V1/V2/E1 无法判定。结论、报告、摘要在 `out/m1-agent-relay/`（不进 git），`conclusion verify` 通过。
+- [x] 结论与报告放在本仓库输出目录；**给用户看摘要后**发给 `autopr-design`（#21634）。写进 agent-relay 仓库由用户和 `agent-relay-owner` 决定
 
 - [ ] **T14 entry 探针**（M）
   - 做什么：按接口契约调用 `interface.yml` 的入口：临时 `git worktree` 检出被测 SHA、注入 `AUTOPR_*` 环境变量、超时、读报告或按退出码生成最小报告、跑后核对 git 状态未变、删除 worktree；仅在 `--exec-entries` 时执行，否则 `unknown`。覆盖 V1、V2。
