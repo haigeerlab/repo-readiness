@@ -41,6 +41,14 @@ def _cap(ruleset: Ruleset, tier_id: Optional[str]) -> Optional[str]:
     return ruleset.tier(tier_id).trust_cap if tier_id else ruleset.below_lowest.get("trust_cap")
 
 
+def _result(r) -> Dict[str, Any]:
+    out = {"clause": r.clause, "target": r.target, "status": r.status, "evidence": r.evidence,
+           "missing": r.missing, "error": r.error, "source": r.source, "fingerprint": r.fingerprint}
+    if r.waiver_until:
+        out["waiver_until"] = r.waiver_until
+    return out
+
+
 def _check(chk: TierCheck) -> Dict[str, Any]:
     return dataclasses.asdict(chk)
 
@@ -70,9 +78,7 @@ def build(ruleset: Ruleset, scan: Scan, score: Score, *, repo_path: Path, repo_n
         "tier": tier_ref,
         "next_tier": _check(score.next_tier) if score.next_tier else None,
         "units": [{"unit": u.unit, "tier": u.tier, "checks": [_check(c) for c in u.checks]} for u in score.units],
-        "results": [{"clause": r.clause, "target": r.target, "status": r.status, "evidence": r.evidence,
-                     "missing": r.missing, "error": r.error, "source": r.source, "fingerprint": r.fingerprint}
-                    for r in scan.results],
+        "results": [_result(r) for r in scan.results],
         "unknown": [{"clause": c, "target": t} for c, t in score.unknown],
         "invalid_waivers": [{"clause": c, "target": t, "reason": why} for c, t, why in score.invalid_waivers],
         "not_evaluated": scan.not_evaluated,

@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from repo_readiness.clauses import Clause, Ruleset
+from repo_readiness.detect.declarations import apply as apply_declaration
 from repo_readiness.detect.score import REPO
 from repo_readiness.probes.runtime import ProbeContext, ProbeResult, evaluate
 
@@ -26,6 +27,7 @@ class ClauseResult:
     missing: Optional[str] = None
     error: Optional[str] = None
     source: str = "scan"
+    waiver_until: Optional[str] = None
 
     @property
     def fingerprint(self) -> str:
@@ -70,7 +72,8 @@ def _judge_one(c: Clause, ctx: ProbeContext, category: Optional[str]) -> Tuple[C
 
 def scan(ruleset: Ruleset, repo_root: Path, *, category: Optional[str] = None,
          apps: Optional[Dict[str, str]] = None, github: Optional[Any] = None,
-         repo_name: Optional[str] = None, now: Optional[Any] = None) -> Scan:
+         repo_name: Optional[str] = None, now: Optional[Any] = None, declarations: Optional[Any] = None,
+         registry: Optional[Any] = None, risk_templates: Optional[Any] = None) -> Scan:
     apps = apps or {}
     results = []  # type: List[ClauseResult]
     not_evaluated = []  # type: List[Dict[str, str]]
@@ -81,9 +84,11 @@ def scan(ruleset: Ruleset, repo_root: Path, *, category: Optional[str] = None,
             not_evaluated.append({"clause": c.id, "reason": "lifecycle is %s" % c.lifecycle})
             continue
         for target, path in _targets(c, apps):
-            ctx = ProbeContext(repo_root=repo_root, base=path, github=github, repo_name=repo_name, now=now)
+            ctx = ProbeContext(repo_root=repo_root, base=path, github=github, repo_name=repo_name, now=now,
+                               declarations=declarations, registry=registry, risk_templates=risk_templates)
             res, probe = _judge_one(c, ctx, category)
             res.target = target
+            res = apply_declaration(c, res, declarations)
             results.append(res)
             for name in probe.not_implemented:
                 not_evaluated.append({"clause": c.id, "target": target,

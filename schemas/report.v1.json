@@ -100,7 +100,8 @@
           "missing": { "type": ["string", "null"] },
           "error": { "type": ["string", "null"] },
           "source": { "enum": ["scan", "judge", "carried-over"] },
-          "fingerprint": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+          "fingerprint": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "waiver_until": { "type": "string", "format": "date", "description": "Only for status waived (added in 0.2.0, optional)" }
         }
       }
     },

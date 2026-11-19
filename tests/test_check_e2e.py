@@ -62,9 +62,9 @@ class CheckE2ETest(unittest.TestCase):
         self.assertFalse(high["reached"])
         self.assertEqual(report["rulesets"][0]["id"], "toy")
         self.assertEqual(len(report["rulesets"][0]["sha256"]), 64)
-        # T4 needs declare + judge, which this version does not implement: unknown, not met.
-        self.assertEqual(self.result(report, "T4")["status"], "unknown")
-        self.assertIn({"clause": "T4", "target": "repo"}, report["unknown"])
+        # T4 is declare-then-judge; without readiness.yml there is no self-assessment: gap, not met.
+        self.assertEqual(self.result(report, "T4")["status"], "gap")
+        self.assertIn("readiness.yml", self.result(report, "T4")["missing"])
         self.assertTrue(any(n["clause"] == "T6" and "future" in n["reason"] for n in report["not_evaluated"]))
         summary = (self.out / "summary.md").read_text(encoding="utf-8")
         self.assertLessEqual(len(summary.splitlines()), 30)

@@ -84,7 +84,8 @@
   - 依赖：T2、T6。文件：`src/repo_readiness/probes/workflow.py`、`tests/test_probe_workflow.py`。
   - 风险：真实 workflow 可能超出 YAML 子集（多行 `run: |` 很常见）。**若超出，先停下报告**，再决定是扩子集还是只做行级扫描。
 
-- [ ] **T13 config / declare 探针**（M）
+- [x] **T13 config / declare 探针**（M）
+  - 完成说明：`config.parses`、`registry.owner_registered`（信箱名单用 `--registry FILE` 传入，工具不读 agent-relay 内部数据）、`risk.template_paths_kept`（类别模板用 `--risk-templates FILE` 传入，只识别完全相同的通配符）、`declare`；引擎按自评处理 N/A（na_allowed、理由与批准人）和豁免（理由、到期日、批准人；过期 / 超 90 天 / 不可豁免由打分判）；探针已满足时自评不覆盖。`check` 的类别与应用在未给参数时取自 readiness.yml。报告 v1 新增可选字段 `results[].waiver_until`（只加不改）。自评条目 v1 只认仓库级，按应用分别自评留待以后。`judge` 仍未实现（T17），先声明后裁决的条款在自评为"满足"时仍是"无法判定"。
   - 做什么：`config`（解析 YAML / JSON，按路径取值）；`declare`（读 `readiness.yml` 自评的 status / evidence / plan / reason / until / approved-by）；G7 三个登记文件存在且可解析；D1 指令文件提到 `check` 入口；R1 类别模板 T4 路径未被删（模板草案为夹具）。
   - 验收：缺文件、解析失败、自评格式错误、豁免超 90 天、G2 申请豁免（不允许）各有用例。
   - 依赖：T2、T6。文件：`src/repo_readiness/probes/{config,declare}.py`、`tests/test_probe_declare.py`。

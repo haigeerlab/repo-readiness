@@ -49,6 +49,7 @@ def _relative_path_ok(p: str) -> bool:
 
 def _check(args: argparse.Namespace) -> int:
     import datetime
+    import json
     from pathlib import Path
 
     from repo_readiness import report as rpt
@@ -69,12 +70,38 @@ def _check(args: argparse.Namespace) -> int:
     if args.min_tier and args.min_tier not in tier_ids:
         return _usage_error("--min-tier %r is not a tier of %s (tiers: %s)"
                             % (args.min_tier, ruleset.id, ", ".join(tier_ids)))
-    if args.category and ruleset.categories and args.category not in ruleset.categories:
-        return _usage_error("--category %r is not a category of %s (categories: %s)"
-                            % (args.category, ruleset.id, ", ".join(ruleset.categories)))
+    from repo_readiness.detect.declarations import load_declarations
+    if not _relative_path_ok(args.declaration):
+        return _usage_error("--declaration must be a path relative to the repository root")
+    decls = load_declarations(repo, args.declaration)
+    category = args.category or (decls.category if not decls.error else None)
+    if category and ruleset.categories and category not in ruleset.categories:
+        return _usage_error("category %r (%s) is not a category of %s (categories: %s)"
+                            % (category, "--category" if args.category else decls.path, ruleset.id,
+                               ", ".join(ruleset.categories)))
+    registry = risk_templates = None
+    if args.registry:
+        try:
+            names = json.loads(Path(args.registry).read_text(encoding="utf-8"))
+            names = names.get("agents", names) if isinstance(names, dict) else names
+            registry = frozenset(n if isinstance(n, str) else n.get("name") for n in names)
+        except (OSError, ValueError, AttributeError, TypeError) as e:
+            return _usage_error("--registry: cannot read a JSON list of agent names: %s" % e)
+    if args.risk_templates:
+        from repo_readiness.yamlsub import YamlSubsetError, load as load_yaml
+        try:
+            risk_templates = load_yaml(args.risk_templates)
+        except (OSError, YamlSubsetError, UnicodeDecodeError) as e:
+            return _usage_error("--risk-templates: %s" % e)
+    app_specs = list(args.app or [])
+    if not app_specs and not decls.error:
+        for app_id, spec in decls.apps().items():
+            if isinstance(spec, dict) and isinstance(spec.get("path"), str):
+                extra = [g for g in spec.get("paths") or [] if isinstance(g, str)]
+                app_specs.append("%s=%s" % (app_id, ",".join([spec["path"]] + extra)))
     apps = {}  # app id -> root directory (where app-scoped probes look)
     app_paths = {}  # app id -> globs mapping files to the app (root/** first)
-    for spec in args.app or []:
+    for spec in app_specs:
         app_id, sep, rest = spec.partition("=")
         parts = rest.split(",") if rest else []
         if not sep or not app_id or not parts:
@@ -98,12 +125,16 @@ def _check(args: argparse.Namespace) -> int:
         return _usage_error("--as-of expects YYYY-MM-DD, got %r" % args.as_of)
 
     github = _github_client(args)
-    sc = scan(ruleset, repo, category=args.category, apps=apps, github=github, repo_name=args.repo_name, now=now)
-    outcomes = {(r.clause, r.target): Outcome(r.status) for r in sc.results}
+    sc = scan(ruleset, repo, category=category, apps=apps, github=github, repo_name=args.repo_name, now=now,
+              declarations=decls, registry=registry, risk_templates=risk_templates)
+    if decls.error:
+        sc.errors.append({"clause": "*", "target": "repo", "message": decls.error})
+    outcomes = {(r.clause, r.target): Outcome(r.status, waiver_until=datetime.date.fromisoformat(r.waiver_until)
+                                              if r.waiver_until else None) for r in sc.results}
     result = score(ruleset, outcomes, apps=list(apps), today=as_of)
     report = rpt.build(ruleset, sc, result, repo_path=repo.resolve(), repo_name=args.repo_name,
                        head=rpt.git_head(repo) if (repo / ".git").exists() else None,
-                       category=args.category, apps=apps, app_paths=app_paths, as_of=as_of,
+                       category=category, apps=apps, app_paths=app_paths, as_of=as_of,
                        min_tier=args.min_tier)
     text = rpt.summary(report, ruleset)
     rpt.write(report, text, Path(args.out))
@@ -141,6 +172,10 @@ def build_parser() -> argparse.ArgumentParser:
                        help="monorepo 的应用：ROOT 是应用目录（应用级探针在此查找），其后可加通配符，"
                             "与 ROOT/** 一起把文件对应到应用；可重复")
     check.add_argument("--repo-name", help="owner/name，写进报告")
+    check.add_argument("--declaration", default=".github/autopr/readiness.yml",
+                       help="仓库自评文件（相对仓库根），默认 .github/autopr/readiness.yml；类别与应用在未给参数时取自它")
+    check.add_argument("--registry", metavar="FILE", help="本机信箱已登记的通信名（JSON 数组），用于核对 owner")
+    check.add_argument("--risk-templates", metavar="FILE", help="风险分档的类别模板（YAML），用于核对 R1")
     check.add_argument("--min-tier", help="达到这一档退出 0，否则退出 1")
     check.add_argument("--github", choices=["live", "off"],
                        help="是否只读访问 GitHub（经 gh api，仅 GET）；给了 --repo-name 时默认 live，否则 off")

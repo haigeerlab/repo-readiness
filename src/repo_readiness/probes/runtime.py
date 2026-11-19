@@ -34,6 +34,9 @@ class ProbeContext:
     github: Optional[Any] = None  # platform.github.GitHub, or None when GitHub access is off
     repo_name: Optional[str] = None  # owner/name on GitHub
     now: Optional[Any] = None  # datetime (UTC) of the check; time-window probes need it
+    declarations: Optional[Any] = None  # detect.declarations.Declarations (readiness.yml)
+    registry: Optional[Any] = None  # frozenset of registered mailbox agent names, or None if not provided
+    risk_templates: Optional[Any] = None  # parsed category risk templates, or None if not provided
 
     @property
     def base_dir(self) -> Path:
@@ -111,4 +114,4 @@ def evaluate(expr: Dict, ctx: ProbeContext) -> ProbeResult:
 
 
 # Import implementations so they register themselves.
-from repo_readiness.probes import fs, github, workflow  # noqa: E402,F401  (registration side effect)
+from repo_readiness.probes import config, fs, github, workflow  # noqa: E402,F401  (registration side effect)
