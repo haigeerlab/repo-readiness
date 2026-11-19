@@ -8,4 +8,6 @@
 | `pwa-platform/` | 2026-11-19 | main 的旧版保护（未设置）、生效规则、规则集 23986228「main: PR and CI gate」（G2：规则集保护，v1.0 初评误判过的场景） |
 | `agent-relay/` | 2026-11-19 | main 的旧版保护（禁 force push、禁删除，未要求 PR）、生效规则（无）（G2） |
 
+2026-11-20 补录三仓的 `repos/<repo>`、`actions/permissions/workflow`、`actions/runs?branch=main&status=completed&per_page=30`（G1、G4、G5、G6）。运行记录在录制时去掉了嵌入的 repository、head_repository、head_commit、actor、triggering_actor 对象（探针不读，录制体积从约 475KB 降到约 70KB）；线上返回从不改动。
+
 构造的夹具（规则集处于 evaluate / disabled、权限不足、绕过名单含应用等）不落盘，由 `tests/test_probe_g2.py` 在这些真实录制上改一个字段生成。

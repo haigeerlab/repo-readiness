@@ -70,7 +70,7 @@ def _judge_one(c: Clause, ctx: ProbeContext, category: Optional[str]) -> Tuple[C
 
 def scan(ruleset: Ruleset, repo_root: Path, *, category: Optional[str] = None,
          apps: Optional[Dict[str, str]] = None, github: Optional[Any] = None,
-         repo_name: Optional[str] = None) -> Scan:
+         repo_name: Optional[str] = None, now: Optional[Any] = None) -> Scan:
     apps = apps or {}
     results = []  # type: List[ClauseResult]
     not_evaluated = []  # type: List[Dict[str, str]]
@@ -81,7 +81,7 @@ def scan(ruleset: Ruleset, repo_root: Path, *, category: Optional[str] = None,
             not_evaluated.append({"clause": c.id, "reason": "lifecycle is %s" % c.lifecycle})
             continue
         for target, path in _targets(c, apps):
-            ctx = ProbeContext(repo_root=repo_root, base=path, github=github, repo_name=repo_name)
+            ctx = ProbeContext(repo_root=repo_root, base=path, github=github, repo_name=repo_name, now=now)
             res, probe = _judge_one(c, ctx, category)
             res.target = target
             results.append(res)

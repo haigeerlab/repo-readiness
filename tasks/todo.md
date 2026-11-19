@@ -68,7 +68,8 @@
   - 验收：四类真实返回录制成夹具——pwa-platform 规则集（`met`）、agent-relay 旧版保护未要求 PR（`gap`）、规则集 `evaluate`（`gap`，构造）、权限不足（`unknown`，构造）——结论全对。
   - 依赖：T9。文件：`src/repo_readiness/probes/github_rules.py`、`tests/test_probe_g2.py`、`tests/fixtures/github/`。
 
-- [ ] **T11 G1 / G4 / G5 / G6 设置类探针**（M）
+- [x] **T11 G1 / G4 / G5 / G6 设置类探针**（M）
+  - 完成说明：G4 取 main 上最近一次已完成的 push / schedule / dispatch 运行（不算 PR，cancelled / skipped 不算结论），按 created_at 从检测时刻往回滚动 336 小时；G5 平台不报告时判 unknown 并提示需 CI 等效检查（该部分本版不判定）；G6 这里只做仓库设置部分，危险触发写法在 T12。待 `autopr-standard` 确认：G4 是否看"任一 workflow 的最近一次"（现做法）还是"每个 workflow 各自的最近一次"。
   - 做什么：仓库归属与默认分支（G1）；main 最近一次 CI 结论与日期（G4，从检测时刻往回滚动 336 小时）；秘密扫描与推送保护（G5，私有仓库读不到时判 `unknown` 并提示 CI 等效检查）；workflow 默认权限与"能否批准 PR"（G6 的设置部分）。
   - 验收：每个探针一正一反 + 一个读不到的夹具。
   - 依赖：T9。文件：`src/repo_readiness/probes/github_repo.py`、`tests/test_probe_repo.py`。

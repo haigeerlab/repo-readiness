@@ -1,0 +1,18 @@
+{
+  "status": "ok",
+  "http_status": 200,
+  "data": {
+    "default_workflow_permissions": "read",
+    "can_approve_pull_request_reviews": false
+  },
+  "message": "",
+  "headers": {
+    "content-type": "application/json; charset=utf-8",
+    "x-ratelimit-limit": "5000",
+    "x-ratelimit-remaining": "4995",
+    "x-ratelimit-reset": "1795105118",
+    "x-ratelimit-resource": "core",
+    "x-ratelimit-used": "5"
+  },
+  "path": "repos/haigeerlab/pwa-platform/actions/permissions/workflow"
+}

@@ -33,6 +33,7 @@ class ProbeContext:
     base: str = ""  # path prefix of the app being judged, relative to repo_root ("" = repo)
     github: Optional[Any] = None  # platform.github.GitHub, or None when GitHub access is off
     repo_name: Optional[str] = None  # owner/name on GitHub
+    now: Optional[Any] = None  # datetime (UTC) of the check; time-window probes need it
 
     @property
     def base_dir(self) -> Path:

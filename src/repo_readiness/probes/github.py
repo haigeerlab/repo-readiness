@@ -178,3 +178,107 @@ def effective_branch_rules(params: Dict, ctx: ProbeContext) -> ProbeResult:
                                error="无法读取 %s；已读到的部分不足以判定：%s" % ("、".join(unreadable), "；".join(missing)))
         return ProbeResult(status="gap", evidence=evidence, missing="; ".join(missing))
     return ProbeResult(status="met", evidence=evidence)
+
+
+# --------------------------------------------------------------------------- G4 / G5 / G6
+
+def _ts(s: str):
+    import datetime
+    return datetime.datetime.strptime(s, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc)
+
+
+_NOT_A_VERDICT = {"cancelled", "skipped"}
+_BRANCH_EVENTS = {"push", "schedule", "workflow_dispatch", "merge_group"}
+
+
+@runtime.register("github.main_ci_green")
+def main_ci_green(params: Dict, ctx: ProbeContext) -> ProbeResult:
+    """Latest completed CI run on the branch (push / schedule / dispatch; not PRs) is success, within max_age_hours.
+
+    Age is measured from the run's created_at back from ctx.now (rolling hours, #21538).
+    Cancelled and skipped runs are not a verdict; the next one decides.
+    """
+    blocked = _ready(ctx)
+    if blocked:
+        return blocked
+    if ctx.now is None:
+        return ProbeResult(status="unknown", error="check time unknown (internal: ctx.now not set)")
+    branch, max_h = params["branch"], params["max_age_hours"]
+    path = "repos/%s/actions/runs?branch=%s&status=completed&per_page=30" % (ctx.repo_name, branch)
+    r, failed = _fetch(ctx, path)
+    if failed:
+        return failed
+    if not r.ok:
+        return ProbeResult(status="unknown", error="cannot read workflow runs: %s %s" % (r.status, r.message))
+    runs = [x for x in r.data.get("workflow_runs", []) if x.get("event") in _BRANCH_EVENTS
+            and x.get("head_branch") == branch and x.get("conclusion") not in _NOT_A_VERDICT]
+    if not runs:
+        return ProbeResult(status="gap", missing="no completed push / scheduled CI run on %s among the latest 30" % branch)
+    latest = max(runs, key=lambda x: x["created_at"])
+    when = _ts(latest["created_at"])
+    age_h = (ctx.now - when).total_seconds() / 3600
+    ev = ["latest %s run on %s: %s「%s」%s at %s (%.0f h ago)" % (latest["event"], branch, latest.get("conclusion"),
+                                                               latest.get("name"), latest.get("html_url", ""),
+                                                               latest["created_at"], age_h)]
+    problems = []
+    if latest.get("conclusion") != "success":
+        problems.append("latest run concluded %s" % latest.get("conclusion"))
+    if age_h > max_h:
+        problems.append("latest run is %.0f h old, limit %d h" % (age_h, max_h))
+    if problems:
+        return ProbeResult(status="gap", evidence=ev, missing="; ".join(problems))
+    return ProbeResult(status="met", evidence=ev)
+
+
+@runtime.register("github.secret_scanning")
+def secret_scanning(params: Dict, ctx: ProbeContext) -> ProbeResult:
+    blocked = _ready(ctx)
+    if blocked:
+        return blocked
+    r, failed = _fetch(ctx, "repos/%s" % ctx.repo_name)
+    if failed:
+        return failed
+    if not r.ok:
+        return ProbeResult(status="unknown", error="cannot read repos/%s: %s %s" % (ctx.repo_name, r.status, r.message))
+    ssa = r.data.get("security_and_analysis") or {}
+    scan = (ssa.get("secret_scanning") or {}).get("status")
+    push = (ssa.get("secret_scanning_push_protection") or {}).get("status")
+    if scan is None or push is None:
+        return ProbeResult(status="unknown", error=(
+            "GitHub does not report secret scanning for this repository (%s; token without admin rights, or the "
+            "platform does not offer it). The standard then requires an equivalent required secret check in CI, "
+            "which this version cannot verify yet" % r.data.get("visibility")))
+    ev = ["secret scanning %s, push protection %s (%s repository)" % (scan, push, r.data.get("visibility"))]
+    missing = []
+    if scan != "enabled":
+        missing.append("secret scanning is %s" % scan)
+    if push != "enabled":
+        missing.append("push protection is %s" % push)
+    if missing:
+        return ProbeResult(status="gap", evidence=ev, missing="; ".join(missing))
+    return ProbeResult(status="met", evidence=ev)
+
+
+@runtime.register("github.workflow_permissions")
+def workflow_permissions(params: Dict, ctx: ProbeContext) -> ProbeResult:
+    """Repository setting part of G6: default GITHUB_TOKEN read-only, workflows cannot approve PRs."""
+    blocked = _ready(ctx)
+    if blocked:
+        return blocked
+    r, failed = _fetch(ctx, "repos/%s/actions/permissions/workflow" % ctx.repo_name)
+    if failed:
+        return failed
+    if not r.ok:
+        return ProbeResult(status="unknown", error="cannot read workflow permissions (needs admin): %s %s"
+                           % (r.status, r.message))
+    default = r.data.get("default_workflow_permissions")
+    approve = r.data.get("can_approve_pull_request_reviews")
+    ev = ["default GITHUB_TOKEN permissions %s; workflows can approve PRs: %s" % (default, approve)]
+    missing = []
+    if default != "read":
+        missing.append("default GITHUB_TOKEN permission is %s, must be read" % default)
+    if approve is not False:
+        missing.append("workflows are allowed to approve pull requests")
+    if missing:
+        return ProbeResult(status="gap", evidence=ev, missing="; ".join(missing))
+    return ProbeResult(status="met", evidence=ev)

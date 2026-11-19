@@ -1,0 +1,18 @@
+{
+  "status": "ok",
+  "http_status": 200,
+  "data": {
+    "default_workflow_permissions": "read",
+    "can_approve_pull_request_reviews": false
+  },
+  "message": "",
+  "headers": {
+    "content-type": "application/json; charset=utf-8",
+    "x-ratelimit-limit": "5000",
+    "x-ratelimit-remaining": "4994",
+    "x-ratelimit-reset": "1795105118",
+    "x-ratelimit-resource": "core",
+    "x-ratelimit-used": "6"
+  },
+  "path": "repos/haigeerlab/agent-relay/actions/permissions/workflow"
+}

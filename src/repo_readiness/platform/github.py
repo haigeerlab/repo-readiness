@@ -109,6 +109,19 @@ def _record_name(path: str) -> str:
     return hashlib.sha256(path.encode("utf-8")).hexdigest()[:16] + ".json"
 
 
+# Nested objects that make recordings huge and that no probe reads (kept out of fixtures only;
+# live responses are never altered).
+_BULKY_RUN_KEYS = ("repository", "head_repository", "head_commit", "actor", "triggering_actor")
+
+
+def _slim(data: Any) -> Any:
+    if isinstance(data, dict) and isinstance(data.get("workflow_runs"), list):
+        data = dict(data)
+        data["workflow_runs"] = [{k: v for k, v in run.items() if k not in _BULKY_RUN_KEYS}
+                                 for run in data["workflow_runs"]]
+    return data
+
+
 class RecordingTransport:
     """Pass requests to another transport and save each response under dir_."""
 
@@ -120,6 +133,7 @@ class RecordingTransport:
         resp = self.inner.fetch(path)
         self.dir.mkdir(parents=True, exist_ok=True)
         rec = dict(asdict(resp), path=path)
+        rec["data"] = _slim(rec["data"])
         rec["headers"] = {k: v for k, v in resp.headers.items() if k.startswith("x-ratelimit") or k == "content-type"}
         (self.dir / _record_name(path)).write_text(json.dumps(rec, ensure_ascii=False, indent=2) + "\n",
                                                    encoding="utf-8")

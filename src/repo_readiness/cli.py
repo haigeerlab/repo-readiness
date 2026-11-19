@@ -89,12 +89,16 @@ def _check(args: argparse.Namespace) -> int:
         apps[app_id] = root
         app_paths[app_id] = [root + "/**"] + parts[1:]
     try:
-        as_of = datetime.date.fromisoformat(args.as_of) if args.as_of else datetime.datetime.now(datetime.timezone.utc).date()
+        now = _now(args.now)
+    except ValueError:
+        return _usage_error("--now expects YYYY-MM-DDTHH:MM:SSZ, got %r" % args.now)
+    try:
+        as_of = datetime.date.fromisoformat(args.as_of) if args.as_of else now.date()
     except ValueError:
         return _usage_error("--as-of expects YYYY-MM-DD, got %r" % args.as_of)
 
     github = _github_client(args)
-    sc = scan(ruleset, repo, category=args.category, apps=apps, github=github, repo_name=args.repo_name)
+    sc = scan(ruleset, repo, category=args.category, apps=apps, github=github, repo_name=args.repo_name, now=now)
     outcomes = {(r.clause, r.target): Outcome(r.status) for r in sc.results}
     result = score(ruleset, outcomes, apps=list(apps), today=as_of)
     report = rpt.build(ruleset, sc, result, repo_path=repo.resolve(), repo_name=args.repo_name,
@@ -142,6 +146,7 @@ def build_parser() -> argparse.ArgumentParser:
                        help="是否只读访问 GitHub（经 gh api，仅 GET）；给了 --repo-name 时默认 live，否则 off")
     check.add_argument("--github-record", metavar="DIR", help="把 GitHub 返回录制到 DIR（用于测试夹具）")
     check.add_argument("--github-replay", metavar="DIR", help="只用 DIR 里录制的 GitHub 返回，不联网")
+    check.add_argument("--now", help="检测时刻（UTC，YYYY-MM-DDTHH:MM:SSZ），用于按小时滚动的时间窗口；默认当前时间")
     check.add_argument("--as-of", help="按这一天（YYYY-MM-DD）判断豁免与生效日期，默认今天（UTC）")
     check.set_defaults(func=_check)
 
