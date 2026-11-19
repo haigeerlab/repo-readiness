@@ -1,0 +1,7 @@
+#!/bin/bash
+# Launcher. Works with the macOS system bash (3.2) and python3 >= 3.9.
+# REPO_READINESS_PYTHON overrides which interpreter is used.
+set -eu
+here="$(cd "$(dirname "$0")/.." && pwd)"
+py="${REPO_READINESS_PYTHON:-python3}"
+PYTHONPATH="$here/src${PYTHONPATH:+:$PYTHONPATH}" exec "$py" -m repo_readiness "$@"

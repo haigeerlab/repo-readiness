@@ -7,7 +7,7 @@
 
 ## 阶段 1：地基、纵向切片、结论
 
-- [ ] **T1 项目骨架**（S）
+- [x] **T1 项目骨架**（S）
   - 做什么：`bin/repo-readiness` 启动脚本、`src/repo_readiness/` 包、`cli.py`（`--version`、子命令分发）、子进程封装 `run()`（无 stdin、超时映射退出码 3）、`bin/validate.sh`、`.gitignore`、`README.md` 一页。
   - 验收：`bin/repo-readiness --version </dev/null` 输出版本、退出 0；未知子命令退出 2；`run()` 超时用例返回 3。
   - 依赖：无。文件：`bin/`、`src/repo_readiness/{__init__,cli,proc}.py`、`tests/test_proc.py`、`README.md`。
