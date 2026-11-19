@@ -108,6 +108,8 @@ def summary(report: Dict[str, Any], ruleset: Ruleset) -> str:
         lines.append("%s：必须 %d/%d · 建议 %d/%d（需 %d）%s" % (
             names[chk["tier"]], chk["must_met"], must_need, chk["should_met"], chk["should_applicable"],
             chk["should_required"], " ✓" if chk["reached"] else ""))
+        if chk["empty"] and not chk["reached"]:
+            lines.append("  （这一档没有生效的必须项，按未达到计）")
         if not chk["reached"]:
             break
 

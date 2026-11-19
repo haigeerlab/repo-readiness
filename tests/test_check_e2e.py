@@ -54,8 +54,12 @@ class CheckE2ETest(unittest.TestCase):
         p, report = self.check("--category", "plugin", "--min-tier", "standard")
         self.assertEqual(p.returncode, 0, p.stderr)
         self.assertEqual(schema_validator("report.v1").errors(report), [])
-        self.assertEqual(report["tier"]["id"], "high")
-        self.assertEqual(report["tier"]["trust_cap"], "L4")
+        # High only holds a future clause: an empty tier is not reached (gate.empty_tier default).
+        self.assertEqual(report["tier"]["id"], "standard")
+        self.assertEqual(report["tier"]["trust_cap"], "L3")
+        high = next(c for c in report["units"][0]["checks"] if c["tier"] == "high")
+        self.assertTrue(high["empty"])
+        self.assertFalse(high["reached"])
         self.assertEqual(report["rulesets"][0]["id"], "toy")
         self.assertEqual(len(report["rulesets"][0]["sha256"]), 64)
         # T4 needs declare + judge, which this version does not implement: unknown, not met.
@@ -64,7 +68,8 @@ class CheckE2ETest(unittest.TestCase):
         self.assertTrue(any(n["clause"] == "T6" and "future" in n["reason"] for n in report["not_evaluated"]))
         summary = (self.out / "summary.md").read_text(encoding="utf-8")
         self.assertLessEqual(len(summary.splitlines()), 30)
-        self.assertIn("高档", summary)
+        self.assertIn("标准档", summary)
+        self.assertIn("没有生效的必须项", summary)
 
     def test_missing_readme_is_below_lowest_and_fails_min_tier(self):
         make_repo(self.repo, {k: v for k, v in FULL.items() if k != "README.md"})
@@ -108,7 +113,7 @@ class CheckE2ETest(unittest.TestCase):
         self.assertEqual(self.result(report, "T3", "web")["status"], "met")
         self.assertEqual(self.result(report, "T3", "api")["status"], "gap")
         tiers = {a["id"]: a["tier"] for a in report["apps"]}
-        self.assertEqual(tiers, {"web": "high", "api": "basic"})
+        self.assertEqual(tiers, {"web": "standard", "api": "basic"})
         self.assertEqual(report["tier"]["id"], "basic")
 
     def test_as_of_controls_enforce_from(self):

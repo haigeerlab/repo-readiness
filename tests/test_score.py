@@ -9,7 +9,12 @@ from repo_readiness.detect.score import Outcome, score
 TODAY = datetime.date(2026, 11, 19)
 
 
-def ruler(clauses, should=None, tiers=None, na_majority="not-reached", non_waivable=(), max_days=90):
+def ruler(clauses, should=None, tiers=None, na_majority="not-reached", non_waivable=(), max_days=90,
+          empty_tier="reached"):
+    """Table tests use sparse tiers on purpose, so they opt into empty_tier=reached; EmptyTierTest covers the default."""
+    gate = {"should": should or {"rule": "ratio", "ratio": 0.8, "rounding": "floor"}, "na_majority": na_majority}
+    if empty_tier:
+        gate["empty_tier"] = empty_tier
     return from_data({
         "schema": "repo-readiness.clauses/v1", "id": "t", "version": "1.0.0", "kind": "base", "owner": "x",
         "tiers": tiers or [
@@ -17,7 +22,7 @@ def ruler(clauses, should=None, tiers=None, na_majority="not-reached", non_waiva
             {"id": "standard", "name": "S", "rank": 2},
         ],
         "below_lowest": {"name": "none"},
-        "gate": {"should": should or {"rule": "ratio", "ratio": 0.8, "rounding": "floor"}, "na_majority": na_majority},
+        "gate": gate,
         "waiver": {"max_days": max_days, "non_waivable": list(non_waivable)},
         "clauses": clauses,
     })
@@ -212,6 +217,36 @@ class AppsTest(unittest.TestCase):
     def test_app_scope_without_apps_is_judged_on_the_repo(self):
         rs = ruler([must("P", scope="app")])
         self.assertEqual(tier_of(rs, outcomes(P="met")), "standard")
+
+
+class EmptyTierTest(unittest.TestCase):
+    """Default: a tier without any effective must clause is not reached (fail closed)."""
+
+    def test_tier_with_only_shoulds_is_not_reached_by_default(self):
+        rs = ruler([must("A"), should("S", "standard")], empty_tier=None)
+        res = score(rs, outcomes(A="met", S="met"), today=TODAY)
+        self.assertEqual(res.tier, "basic")
+        self.assertTrue(res.units[0].checks[1].empty)
+
+    def test_future_only_tier_is_not_reached(self):
+        rs = ruler([must("A"), must("F", "standard", lifecycle="future")], empty_tier=None)
+        self.assertEqual(tier_of(rs, outcomes(A="met")), "basic")
+
+    def test_must_in_grace_does_not_fill_a_tier(self):
+        rs = ruler([must("A"), must("G", "standard", enforce_from="2027-01-01")], empty_tier=None)
+        self.assertEqual(tier_of(rs, outcomes(A="met", G="met")), "basic")
+
+    def test_all_na_musts_are_not_empty_but_hit_na_majority(self):
+        rs = ruler([must("A"), must("B", "standard")], empty_tier=None)
+        res = score(rs, outcomes(A="met", B="na"), today=TODAY)
+        self.assertEqual(res.tier, "basic")
+        chk = res.units[0].checks[1]
+        self.assertFalse(chk.empty)
+        self.assertTrue(chk.na_majority)
+
+    def test_opt_in_reached(self):
+        rs = ruler([must("A"), should("S", "standard")], empty_tier="reached")
+        self.assertEqual(tier_of(rs, outcomes(A="met", S="met")), "standard")
 
 
 class NextTierTest(unittest.TestCase):

@@ -155,7 +155,7 @@
     "tier_check": {
       "type": "object",
       "required": ["tier", "reached", "must_total", "must_met", "must_na", "must_failed", "should_applicable",
-                   "should_met", "should_required", "should_failed", "na_majority", "grace"],
+                   "should_met", "should_required", "should_failed", "na_majority", "grace", "empty"],
       "additionalProperties": false,
       "properties": {
         "tier": { "type": "string" },
@@ -169,7 +169,8 @@
         "should_required": { "type": "integer", "minimum": 0 },
         "should_failed": { "type": "array", "items": { "type": "string" } },
         "na_majority": { "type": "boolean" },
-        "grace": { "type": "array", "items": { "type": "string" } }
+        "grace": { "type": "array", "items": { "type": "string" } },
+        "empty": { "type": "boolean", "description": "No effective must clause in this tier" }
       }
     }
   }

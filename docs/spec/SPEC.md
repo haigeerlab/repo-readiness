@@ -77,7 +77,8 @@
     "must": "all",
     "should": { "rule": "ratio", "ratio": 0.8, "rounding": "floor" },
     "na_majority": "not-reached",
-    "unknown": "counts-as-gap"
+    "unknown": "counts-as-gap",
+    "empty_tier": "not-reached"
   },
   "waiver": { "max_days": 90, "non_waivable": ["G2", "G5", "G6"] },
   "app_aggregation": "min",
@@ -115,6 +116,8 @@
   ]
 }
 ```
+
+**空档位判未达到（用户 2026-11-19 检查点 A 定）**：一档里没有任何生效的必须项（没有，或全部是预告 / 作废 / 宽限中），默认判未达到，报告里标 `empty`。可在 `gate.empty_tier` 改为 `reached`，但默认即"未达到"，防止把某档条款全改成预告就悄悄升档。
 
 **建议项门槛可配置（`autopr-standard` 要求，#21538）**：`gate.should` 是一条可替换的规则，档位可以用 `tiers[].should` 单独覆盖。v1 支持两种：`{"rule": "ratio", "ratio": 0.8, "rounding": "floor"}`（满足数 ≥ ⌊0.8 × 适用数⌋）和 `{"rule": "max_missing", "max_missing": 1}`（每档最多缺 1 条）。用户还在两者之间选，工具不写死。
 

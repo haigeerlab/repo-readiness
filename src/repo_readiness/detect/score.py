@@ -16,7 +16,10 @@ Rules (from the ruler's gate):
   from today, and not target a non_waivable clause; otherwise they count as gap;
 - enforce_from in the future: the clause counts as a should at its must tiers;
 - lifecycle future / obsolete: not scored at all;
-- cumulative: a tier needs every lower tier.
+- cumulative: a tier needs every lower tier;
+- empty_tier (default "not-reached"): a tier with no effective must clause is
+  not reached, so a ruler whose top tier is all future clauses cannot hand
+  out the top trust cap by accident.
 """
 
 import datetime
@@ -56,6 +59,7 @@ class TierCheck:
     should_failed: List[str] = field(default_factory=list)
     na_majority: bool = False
     grace: List[str] = field(default_factory=list)  # musts counted as should before enforce_from
+    empty: bool = False  # no effective must clause in this tier
 
     @property
     def must_ok(self) -> bool:
@@ -170,7 +174,10 @@ def score(ruleset: Ruleset, outcomes: Dict[Tuple[str, str], Outcome], *,
             chk.should_required = _should_required(ruleset.should_rule(t.id), chk.should_applicable)
             if ruleset.gate.get("na_majority", "not-reached") == "not-reached" and chk.must_na * 2 > chk.must_total:
                 chk.na_majority = True
-            chk.reached = reached_so_far and chk.must_ok and chk.should_ok and not chk.na_majority
+            chk.empty = chk.must_total == 0
+            empty_blocks = chk.empty and ruleset.gate.get("empty_tier", "not-reached") == "not-reached"
+            chk.reached = (reached_so_far and chk.must_ok and chk.should_ok and not chk.na_majority
+                           and not empty_blocks)
             reached_so_far = chk.reached
             if chk.reached:
                 reached_tier = t.id

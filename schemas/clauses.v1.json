@@ -50,7 +50,8 @@
         "must": { "const": "all" },
         "should": { "$ref": "#/$defs/should_rule" },
         "na_majority": { "enum": ["not-reached", "ignore"], "default": "not-reached", "description": "When more than half of a tier's must clauses are n/a" },
-        "unknown": { "const": "counts-as-gap" }
+        "unknown": { "const": "counts-as-gap" },
+        "empty_tier": { "enum": ["not-reached", "reached"], "default": "not-reached", "description": "A tier without any effective must clause (none, or all future / obsolete / in grace)" }
       }
     },
     "waiver": {
