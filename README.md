@@ -21,6 +21,21 @@ bin/validate.sh
 
 会先用当前的 `python3` 跑全部测试，再用 `/usr/bin/python3`（3.9）跑一遍。
 
+## 命令
+
+```bash
+bin/repo-readiness clauses lint RULER.json [--base BASE.json]        # 校验尺子（技术栈尺子要带 --base）
+bin/repo-readiness check REPO --clauses RULER.json --out OUT \
+    [--stack-clauses STACK.json ...] [--repo-name owner/name] [--min-tier basic] \
+    [--baseline OLD/report.json] [--judgments judgments.json] [--exec-entries] \
+    [--registry agents.json] [--risk-templates templates.yml]
+bin/repo-readiness diff OLD/report.json NEW/report.json [--json diff.json]   # 有掉档信号时退出 1
+bin/repo-readiness conclude OUT/report.json --default-branch main --out conclusion.json
+bin/repo-readiness conclusion verify conclusion.json --report OUT/report.json
+```
+
+退出码：0 通过 / 达到目标档，1 未达到 / 有掉档信号 / 拒签，2 用法或尺子错误，3 环境未就绪（如 gh 未登录、网络、入口超时）。
+
 ## 状态
 
-开发中（T1 项目骨架）。命令按 [tasks/todo.md](tasks/todo.md) 的顺序陆续加入。
+`v0.3.0`：基础档探针、裁决交接、复检与掉档信号、尺子组合已完成；修复（T20–T22）与试点（T23–T24）进行中，见 [tasks/todo.md](tasks/todo.md)。
