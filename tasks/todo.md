@@ -22,7 +22,7 @@
   - 验收：标准侧 `entry-report.schema.json` 能被加载并校验正反样例；未实现关键字报错。
   - 依赖：T1。文件：`src/repo_readiness/schema.py`、`tests/test_schema.py`。
 
-- [ ] **T4 条款文件格式 v1 + `clauses lint`**（M）
+- [x] **T4 条款文件格式 v1 + `clauses lint`**（M）
   - 做什么：`schemas/clauses.v1.json`（Spec §3.1 的字段，含 `levels`、`applies`、`probe` 组合、`remedy`、`rationale`、`na_*`、`since`、`enforce_from`、`lifecycle`）；加载器；lint 检查 schema、id 唯一、档位引用有效、引用的探针存在。本任务只支持单份 `kind: base`。
   - 验收：一份玩具尺子（3 档、6 条）lint 通过；重复 id、引用不存在的档位、未知探针各报错，退出 2。
   - 依赖：T2、T3。文件：`schemas/clauses.v1.json`、`src/repo_readiness/clauses/`、`tests/test_clauses.py`、`tests/fixtures/rulesets/toy-base.json`。

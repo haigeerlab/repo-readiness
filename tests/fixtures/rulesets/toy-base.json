@@ -1,0 +1,74 @@
+{
+  "schema": "repo-readiness.clauses/v1",
+  "id": "toy",
+  "version": "1.0.0",
+  "kind": "base",
+  "owner": "readiness-tool",
+  "title": "Toy ruler for tests (not real content)",
+  "categories": ["plugin", "frontend"],
+  "tiers": [
+    { "id": "basic", "name": "基础档", "rank": 1, "trust_cap": "L2" },
+    { "id": "standard", "name": "标准档", "rank": 2, "trust_cap": "L3", "should": { "rule": "max_missing", "max_missing": 1 } },
+    { "id": "high", "name": "高档", "rank": 3, "trust_cap": "L4" }
+  ],
+  "below_lowest": { "name": "未达标", "trust_cap": "L0" },
+  "gate": {
+    "cumulative": true,
+    "must": "all",
+    "should": { "rule": "ratio", "ratio": 0.8, "rounding": "floor" },
+    "na_majority": "not-reached",
+    "unknown": "counts-as-gap"
+  },
+  "waiver": { "max_days": 90, "non_waivable": ["T1"] },
+  "app_aggregation": "min",
+  "clauses": [
+    {
+      "id": "T1", "layer": "general",
+      "requirement": "README.md exists", "guards": "nobody knows how to run the repo",
+      "levels": [{ "tier": "basic", "strength": "must" }],
+      "scope": "repo", "applies": { "categories": "*" }, "method": "auto",
+      "probe": { "use": "fs.exists", "with": { "path": "README.md" } },
+      "remedy": { "class": "auto", "generator": "template-file", "hint": "add a README.md" }
+    },
+    {
+      "id": "T2", "layer": "general",
+      "requirement": "a LICENSE file exists", "guards": "unclear reuse terms",
+      "levels": [{ "tier": "basic", "strength": "should" }, { "tier": "standard", "strength": "must" }],
+      "scope": "repo", "applies": { "categories": "*" }, "method": "auto",
+      "probe": { "any": [ { "use": "fs.exists", "with": { "path": "LICENSE" } }, { "use": "fs.exists", "with": { "path": "LICENSE.md" } } ] },
+      "since": "1.0.0", "enforce_from": "2026-12-01"
+    },
+    {
+      "id": "T3", "layer": "capability",
+      "requirement": "tests live under tests/", "guards": "changes ship without tests",
+      "levels": [{ "tier": "standard", "strength": "must" }],
+      "scope": "app", "applies": { "categories": "*" }, "method": "auto",
+      "probe": { "use": "fs.glob", "with": { "pattern": "tests/**/*", "min": 1 } }
+    },
+    {
+      "id": "T4", "layer": "capability",
+      "requirement": "a rollback path is written down", "guards": "improvising during an incident",
+      "levels": [{ "tier": "standard", "strength": "should" }],
+      "scope": "app", "applies": { "categories": "*" }, "method": "declare",
+      "probe": { "use": "declare", "with": { "key": "T4" }, "then": { "use": "judge" } },
+      "remedy": { "class": "manual", "hint": "describe how to revert a merge", "refs": ["docs/rollback.md"] }
+    },
+    {
+      "id": "T5", "layer": "capability",
+      "requirement": "a lockfile is committed when there are third-party dependencies", "guards": "non-reproducible installs",
+      "levels": [{ "tier": "basic", "strength": "must" }],
+      "scope": "app", "applies": { "categories": ["frontend"], "when": { "use": "fs.exists", "with": { "path": "package.json" } } },
+      "method": "auto",
+      "probe": { "use": "fs.contains", "with": { "path": "package-lock.json", "pattern": "lockfileVersion" } },
+      "na_allowed": true, "na_justification_required": false
+    },
+    {
+      "id": "T6", "layer": "capability",
+      "requirement": "a future clause announced ahead of time", "guards": "surprise requirements",
+      "levels": [{ "tier": "high", "strength": "must" }],
+      "scope": "repo", "applies": { "categories": "*" }, "method": "auto",
+      "probe": { "use": "fs.exists", "with": { "path": "SECURITY.md" } },
+      "lifecycle": "future"
+    }
+  ]
+}
