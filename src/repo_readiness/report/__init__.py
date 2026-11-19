@@ -46,6 +46,8 @@ def _result(r) -> Dict[str, Any]:
            "missing": r.missing, "error": r.error, "source": r.source, "fingerprint": r.fingerprint}
     if r.waiver_until:
         out["waiver_until"] = r.waiver_until
+    if r.judge_fingerprint:
+        out["judge_fingerprint"] = r.judge_fingerprint
     return out
 
 
@@ -56,7 +58,8 @@ def _check(chk: TierCheck) -> Dict[str, Any]:
 def build(ruleset: Ruleset, scan: Scan, score: Score, *, repo_path: Path, repo_name: Optional[str],
           head: Optional[str], category: Optional[str], apps: Dict[str, str],
           app_paths: Optional[Dict[str, List[str]]] = None, as_of: datetime.date,
-          min_tier: Optional[str], now: Optional[datetime.datetime] = None) -> Dict[str, Any]:
+          min_tier: Optional[str], now: Optional[datetime.datetime] = None,
+          baseline_sha256: Optional[str] = None) -> Dict[str, Any]:
     now = now or datetime.datetime.now(datetime.timezone.utc)
     if score.tier:
         t = ruleset.tier(score.tier)
@@ -83,8 +86,8 @@ def build(ruleset: Ruleset, scan: Scan, score: Score, *, repo_path: Path, repo_n
         "invalid_waivers": [{"clause": c, "target": t, "reason": why} for c, t, why in score.invalid_waivers],
         "not_evaluated": scan.not_evaluated,
         "errors": scan.errors,
-        "judgment_requests": [],
-        "baseline": None,
+        "judgment_requests": scan.judgment_requests,
+        "baseline": baseline_sha256,
     }
     if min_tier:
         rank = {t.id: t.rank for t in ruleset.tiers}
@@ -131,7 +134,12 @@ def summary(report: Dict[str, Any], ruleset: Ruleset) -> str:
             for cid in ids:
                 r = by_key.get((cid, target)) or by_key.get((cid, "repo"))
                 c = ruleset.clause(cid)
-                if r and r["status"] == "unknown":
+                pending = any(q["clause"] == cid and q["target"] == (r or {}).get("target")
+                              for q in report["judgment_requests"])
+                if r and r["status"] == "unknown" and pending:
+                    why = "待裁决（见 judgment-requests.json）"
+                    mark = "?"
+                elif r and r["status"] == "unknown":
                     why = "无法判定：%s" % (r["error"] or "缺少结果")
                     mark = "?"
                 else:
@@ -141,8 +149,8 @@ def summary(report: Dict[str, Any], ruleset: Ruleset) -> str:
     if report["apps"]:
         detail.append("应用：" + " · ".join("%s %s" % (a["id"], names.get(a["tier"], ruleset.below_lowest["name"]))
                                             for a in report["apps"]))
-    tail = "无法判定 %d 条 · 未评估 %d 条 · 探针错误 %d 条（详见 report.json）" % (
-        len(report["unknown"]), len(report["not_evaluated"]), len(report["errors"]))
+    tail = "无法判定 %d 条（其中待裁决 %d 条）· 未评估 %d 条 · 探针错误 %d 条（详见 report.json）" % (
+        len(report["unknown"]), len(report["judgment_requests"]), len(report["not_evaluated"]), len(report["errors"]))
 
     room = SUMMARY_MAX_LINES - len(lines) - 1
     if len(detail) > room:
@@ -155,3 +163,11 @@ def write(report: Dict[str, Any], text: str, out_dir: Path) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     (out_dir / "summary.md").write_text(text, encoding="utf-8")
+    requests_file = out_dir / "judgment-requests.json"
+    if report["judgment_requests"]:
+        requests_file.write_text(json.dumps({"schema": "repo-readiness.judgment-requests/v1",
+                                             "report_generated_at": report["generated_at"],
+                                             "requests": report["judgment_requests"]},
+                                            ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    elif requests_file.exists():
+        requests_file.unlink()

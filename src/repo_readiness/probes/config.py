@@ -117,3 +117,9 @@ def declare(params: Dict, ctx: ProbeContext) -> ProbeResult:
     if entry.status == "gap":
         return ProbeResult(status="gap", missing="self-assessed gap; plan: %s" % (entry.plan or "(none)"))
     return ProbeResult(status="gap", missing="declared %s (resolved by the n/a and waiver rules)" % entry.status)
+
+
+@runtime.register("judge")
+def judge(params: Dict, ctx: ProbeContext) -> ProbeResult:
+    """Not a check: marks the clause as waiting for an agent judgment (see detect/judge.py)."""
+    return ProbeResult(status="unknown", judge_question=params.get("question", ""))

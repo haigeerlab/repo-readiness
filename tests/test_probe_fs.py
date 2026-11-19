@@ -107,10 +107,16 @@ class CombinatorTest(unittest.TestCase):
         self.assertEqual(self.st(dict(self.E("A"), then=self.E("A"))), "met")
 
     def test_declared_but_unimplemented_probe_is_unknown(self):
-        r = evaluate({"use": "judge"}, self.ctx)
+        # Every catalog probe is implemented today; simulate a ruler that is ahead of the tool.
+        from repo_readiness.probes import runtime
+        saved = runtime._IMPLEMENTATIONS.pop("fs.glob")
+        try:
+            r = evaluate({"use": "fs.glob", "with": {"pattern": "*"}}, self.ctx)
+        finally:
+            runtime._IMPLEMENTATIONS["fs.glob"] = saved
         self.assertEqual(r.status, "unknown")
         self.assertIn("not implemented", r.error)
-        self.assertEqual(r.not_implemented, ["judge"])
+        self.assertEqual(r.not_implemented, ["fs.glob"])
 
 
 if __name__ == "__main__":

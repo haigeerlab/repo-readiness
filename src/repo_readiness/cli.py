@@ -124,9 +124,28 @@ def _check(args: argparse.Namespace) -> int:
     except ValueError:
         return _usage_error("--as-of expects YYYY-MM-DD, got %r" % args.as_of)
 
+    judgments = baseline = baseline_sha = None
+    if args.judgments:
+        from repo_readiness.resources import schema_validator
+        try:
+            judgments = json.loads(Path(args.judgments).read_text(encoding="utf-8"))
+        except (OSError, ValueError) as e:
+            return _usage_error("--judgments: %s" % e)
+        problems = schema_validator("judgments.v1").errors(judgments)
+        if problems:
+            return _usage_error("--judgments does not match judgments.v1: %s" % "; ".join(str(p) for p in problems[:3]))
+    if args.baseline:
+        import hashlib
+        try:
+            raw = Path(args.baseline).read_bytes()
+            baseline = json.loads(raw.decode("utf-8"))
+        except (OSError, ValueError) as e:
+            return _usage_error("--baseline: %s" % e)
+        baseline_sha = hashlib.sha256(raw).hexdigest()
     github = _github_client(args)
     sc = scan(ruleset, repo, category=category, apps=apps, github=github, repo_name=args.repo_name, now=now,
-              declarations=decls, registry=registry, risk_templates=risk_templates, exec_entries=args.exec_entries)
+              declarations=decls, registry=registry, risk_templates=risk_templates, exec_entries=args.exec_entries,
+              judgments=judgments, baseline=baseline)
     if decls.error:
         sc.errors.append({"clause": "*", "target": "repo", "message": decls.error})
     outcomes = {(r.clause, r.target): Outcome(r.status, waiver_until=datetime.date.fromisoformat(r.waiver_until)
@@ -135,7 +154,7 @@ def _check(args: argparse.Namespace) -> int:
     report = rpt.build(ruleset, sc, result, repo_path=repo.resolve(), repo_name=args.repo_name,
                        head=rpt.git_head(repo) if (repo / ".git").exists() else None,
                        category=category, apps=apps, app_paths=app_paths, as_of=as_of,
-                       min_tier=args.min_tier)
+                       min_tier=args.min_tier, baseline_sha256=baseline_sha)
     text = rpt.summary(report, ruleset)
     rpt.write(report, text, Path(args.out))
     sys.stdout.write(text)
@@ -176,6 +195,8 @@ def build_parser() -> argparse.ArgumentParser:
                        help="仓库自评文件（相对仓库根），默认 .github/autopr/readiness.yml；类别与应用在未给参数时取自它")
     check.add_argument("--exec-entries", action="store_true",
                        help="运行 interface.yml 登记的入口（会执行被测仓库的代码；在临时克隆里、清理过的环境变量下运行）")
+    check.add_argument("--judgments", metavar="FILE", help="agent 对上一轮 judgment_requests 的裁决（judgments.v1）")
+    check.add_argument("--baseline", metavar="FILE", help="上一份 report.json：证据没变的裁决条款沿用上次结论")
     check.add_argument("--registry", metavar="FILE", help="本机信箱已登记的通信名（JSON 数组），用于核对 owner")
     check.add_argument("--risk-templates", metavar="FILE", help="风险分档的类别模板（YAML），用于核对 R1")
     check.add_argument("--min-tier", help="达到这一档退出 0，否则退出 1")

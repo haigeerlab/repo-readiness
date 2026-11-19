@@ -53,6 +53,7 @@ class ProbeResult:
     not_implemented: List[str] = field(default_factory=list)
     env_error: bool = False  # could not look (GitHub unreachable, not logged in, ...), not "the repo lacks it"
     skipped: List[str] = field(default_factory=list)  # not evaluated in this run by choice (an input was not given)
+    judge_question: Optional[str] = None  # set when the result waits for an agent judgment
 
 
 ProbeFn = Callable[[Dict, ProbeContext], ProbeResult]
@@ -79,6 +80,8 @@ def _merge(results: List[ProbeResult], status: str, missing: Optional[str] = Non
             errors.append(r.error)
         out.env_error = out.env_error or r.env_error
         out.skipped.extend(x for x in r.skipped if x not in out.skipped)
+        if r.judge_question is not None and out.judge_question is None:
+            out.judge_question = r.judge_question
     out.error = "; ".join(errors) or None
     return out
 

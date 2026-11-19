@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from repo_readiness.clauses import Clause, Ruleset
+from repo_readiness.detect import judge
 from repo_readiness.detect.declarations import apply as apply_declaration
 from repo_readiness.detect.score import REPO
 from repo_readiness.probes.runtime import ProbeContext, ProbeResult, evaluate
@@ -28,6 +29,7 @@ class ClauseResult:
     error: Optional[str] = None
     source: str = "scan"
     waiver_until: Optional[str] = None
+    judge_fingerprint: Optional[str] = None
 
     @property
     def fingerprint(self) -> str:
@@ -42,6 +44,7 @@ class Scan:
     not_evaluated: List[Dict[str, str]]
     errors: List[Dict[str, str]]
     env_errors: List[str] = field(default_factory=list)  # the environment, not the repo, stopped a probe
+    judgment_requests: List[Dict[str, Any]] = field(default_factory=list)
 
 
 def _targets(c: Clause, apps: Dict[str, str]) -> List[Tuple[str, str]]:
@@ -74,8 +77,11 @@ def scan(ruleset: Ruleset, repo_root: Path, *, category: Optional[str] = None,
          apps: Optional[Dict[str, str]] = None, github: Optional[Any] = None,
          repo_name: Optional[str] = None, now: Optional[Any] = None, declarations: Optional[Any] = None,
          registry: Optional[Any] = None, risk_templates: Optional[Any] = None,
-         exec_entries: bool = False) -> Scan:
+         exec_entries: bool = False, judgments: Optional[Dict[str, Any]] = None,
+         baseline: Optional[Dict[str, Any]] = None) -> Scan:
     apps = apps or {}
+    verdicts = judge.index_verdicts(judgments)
+    requests = []  # type: List[Dict[str, Any]]
     results = []  # type: List[ClauseResult]
     not_evaluated = []  # type: List[Dict[str, str]]
     errors = []  # type: List[Dict[str, str]]
@@ -91,6 +97,8 @@ def scan(ruleset: Ruleset, repo_root: Path, *, category: Optional[str] = None,
             res, probe = _judge_one(c, ctx, category)
             res.target = target
             res = apply_declaration(c, res, declarations)
+            if probe.judge_question is not None and res.status == "unknown" and not res.error:
+                _settle_judgment(c, res, probe.judge_question, repo_root, verdicts, baseline, requests, errors)
             results.append(res)
             for name in probe.not_implemented:
                 not_evaluated.append({"clause": c.id, "target": target,
@@ -101,4 +109,32 @@ def scan(ruleset: Ruleset, repo_root: Path, *, category: Optional[str] = None,
                 errors.append({"clause": c.id, "target": target, "message": res.error})
             if probe.env_error and res.error not in env_errors:
                 env_errors.append(res.error)
-    return Scan(results=results, not_evaluated=not_evaluated, errors=errors, env_errors=env_errors)
+    for (cid, target), v in verdicts.items():  # verdicts nobody asked for
+        if not any(r["clause"] == cid and r["target"] == target for r in requests) and \
+                not any(r.clause == cid and r.target == target and r.source == "judge" for r in results):
+            errors.append({"clause": cid, "target": target, "message": judge.check_verdict(v, None, repo_root)})
+    return Scan(results=results, not_evaluated=not_evaluated, errors=errors, env_errors=env_errors,
+                judgment_requests=requests)
+
+
+def _settle_judgment(c: Clause, res: ClauseResult, question: str, repo_root: Path, verdicts: Dict,
+                     baseline: Optional[Dict], requests: List[Dict], errors: List[Dict]) -> None:
+    fp = judge.fingerprint(c.id, res.target, res.evidence)
+    res.judge_fingerprint = fp
+    prev = judge.previous_verdict(baseline, c.id, res.target, fp)
+    if prev is not None:
+        res.status, res.source = prev["status"], "carried-over"
+        res.evidence = res.evidence + [e for e in prev.get("evidence", []) if e.startswith("judged ")]
+        res.missing = prev.get("missing")
+        return
+    req = judge.request(c, res.target, res.evidence, question, fp)
+    v = verdicts.get((c.id, res.target))
+    if v is not None:
+        problem = judge.check_verdict(v, req, repo_root)
+        if problem is None:
+            res.status, res.source = v["status"], "judge"
+            res.evidence = res.evidence + ["judged %s: %s" % (v["status"], v["evidence"])]
+            res.missing = v["evidence"] if v["status"] == "gap" else None
+            return
+        errors.append({"clause": c.id, "target": res.target, "message": problem})
+    requests.append(req)

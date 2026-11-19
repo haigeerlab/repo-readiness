@@ -101,7 +101,8 @@
           "error": { "type": ["string", "null"] },
           "source": { "enum": ["scan", "judge", "carried-over"] },
           "fingerprint": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
-          "waiver_until": { "type": "string", "format": "date", "description": "Only for status waived (added in 0.2.0, optional)" }
+          "waiver_until": { "type": "string", "format": "date", "description": "Only for status waived (added in 0.2.0, optional)" },
+          "judge_fingerprint": { "type": "string", "pattern": "^[0-9a-f]{64}$", "description": "Fingerprint of the evidence put to the judge (added in 0.3.0, optional)" }
         }
       }
     },
@@ -133,8 +134,21 @@
         "properties": { "clause": { "type": "string" }, "target": { "type": "string" }, "message": { "type": "string" } }
       }
     },
-    "judgment_requests": { "type": "array", "description": "Clauses waiting for an agent judgment (filled from a later release)" },
-    "baseline": { "type": ["string", "null"], "description": "sha256 of the previous report this one was built on" }
+    "judgment_requests": {
+      "type": "array",
+      "description": "Clauses waiting for an agent judgment; answer them with a repo-readiness.judgments/v1 file",
+      "items": {
+        "type": "object",
+        "required": ["clause", "target", "requirement", "question", "evidence", "fingerprint"],
+        "properties": {
+          "clause": { "type": "string" }, "target": { "type": "string" }, "requirement": { "type": "string" },
+          "guards": { "type": "string" }, "question": { "type": "string" },
+          "evidence": { "type": "array", "items": { "type": "string" } },
+          "fingerprint": { "type": "string", "pattern": "^[0-9a-f]{64}$" }, "answer_with": { "type": "string" }
+        }
+      }
+    },
+    "baseline": { "anyOf": [{ "type": "string", "pattern": "^[0-9a-f]{64}$" }, { "type": "null" }], "description": "sha256 of the previous report this one was built on" }
   },
   "$defs": {
     "sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },

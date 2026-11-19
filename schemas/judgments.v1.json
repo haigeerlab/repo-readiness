@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/haigeerlab/repo-readiness/schemas/judgments.v1.json",
+  "title": "repo-readiness judgments v1",
+  "description": "An agent's verdicts on a report's judgment_requests. Each verdict is bound to its request by fingerprint and must cite a real file (path or path:line) in the repository.",
+  "type": "object",
+  "required": ["schema", "judgments"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "repo-readiness.judgments/v1" },
+    "judge": { "type": "string", "description": "Who judged (agent / model), for the record" },
+    "judgments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["clause", "target", "fingerprint", "status", "evidence"],
+        "additionalProperties": false,
+        "properties": {
+          "clause": { "type": "string" },
+          "target": { "type": "string" },
+          "fingerprint": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "status": { "enum": ["met", "gap"] },
+          "evidence": { "type": "string", "minLength": 1, "description": "One sentence citing path or path:line" }
+        }
+      }
+    }
+  }
+}

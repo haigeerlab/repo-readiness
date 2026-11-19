@@ -119,7 +119,8 @@
 
 ## 阶段 3：裁决、复检、组合
 
-- [ ] **T17 裁决交接**（M）：`judgment-requests.json` / `judgments.json` 两份 schema；证据指纹；指纹不变沿用上次结论；校验裁决引用的文件存在、行号在范围内、只裁决被请求的条款。验收：伪造引用、越权裁决、指纹变化三类用例。依赖：T6。
+- [x] **T17 裁决交接**（M）：`judgment-requests.json` / `judgments.json` 两份 schema；证据指纹；指纹不变沿用上次结论；校验裁决引用的文件存在、行号在范围内、只裁决被请求的条款。验收：伪造引用、越权裁决、指纹变化三类用例。依赖：T6。
+  - 完成说明：`judge` 探针标记待裁决；`check` 输出 `judgment_requests`（并写 `judgment-requests.json`），请求带证据指纹；`--judgments FILE`（`schemas/judgments.v1.json`）逐条校验：必须是本轮请求、指纹一致、引用的文件（及行号）真实存在，否则拒收并记探针错误、请求保留；`--baseline 旧报告`：证据指纹不变的沿用上次裁决（`carried-over`）。报告 v1 新增可选字段 `results[].judge_fingerprint`，`judgment_requests` 定了条目结构（只加不改）。
 - [ ] **T18 复检 `diff` + 掉档信号**（M）：条款文件 v1 加可选顶层块 `drop: {consecutive_failures: 2, immediate: [ids]}`（用户 2026-11-20 定，#21609 已告知 autopr-standard；不写时默认 2 次、无立即掉档）；状态 / 档位 / 证据变化；原因类别（仓库、尺子、豁免过期、声明过期、权限或环境）；报告记录必须自动条款的连续不满足次数；`drop_signals[]`（连续两次，或 G2 / G5 / G6 一次）。验收：尺子换版本不误报退步；两次 / 一次触发规则各有正反用例。依赖：T7、T17。
 - [ ] **T19 尺子组合**（M）：`kind: stack`、`detect`、`tighten`；仓库 `stacks`（含按应用）；声明优先、不一致进"待确认"；放宽 / 重复定义 / 改适用范围加载失败。验收：玩具技术栈尺子不改代码能加；四类违规各报错。依赖：T4、T5。
 
