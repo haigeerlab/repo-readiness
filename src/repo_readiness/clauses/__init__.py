@@ -15,7 +15,7 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 from repo_readiness.probes.catalog import CATALOG, param_validator
 from repo_readiness.resources import schema_validator
 
-__all__ = ["ClauseFileError", "Clause", "Level", "Ruleset", "Tier", "lint_data", "load"]
+__all__ = ["ClauseFileError", "Clause", "Level", "Ruleset", "Tier", "from_data", "lint_data", "load"]
 
 DEFAULT_SHOULD = {"rule": "ratio", "ratio": 0.8, "rounding": "floor"}
 
@@ -198,12 +198,17 @@ def load(path: Union[str, Path]) -> Ruleset:
         data = json.loads(raw.decode("utf-8"))
     except (UnicodeDecodeError, ValueError) as e:
         raise ClauseFileError(path, ["not valid JSON: %s" % e])
+    return from_data(data, sha256=hashlib.sha256(raw).hexdigest(), source=path)
+
+
+def from_data(data: Any, sha256: str = "", source: Union[str, Path] = "<data>") -> Ruleset:
+    """Build a Ruleset from already-parsed JSON (lints first, like load)."""
     problems = lint_data(data)
     if problems:
-        raise ClauseFileError(path, problems)
+        raise ClauseFileError(source, problems)
     return Ruleset(
         id=data["id"], version=data["version"], kind=data["kind"], owner=data["owner"],
-        sha256=hashlib.sha256(raw).hexdigest(),
+        sha256=sha256,
         clauses=tuple(_clause(c) for c in data["clauses"]),
         tiers=tuple(Tier(t["id"], t["name"], t["rank"], t.get("trust_cap"), t.get("should")) for t in data["tiers"]),
         below_lowest=data["below_lowest"], gate=data["gate"], waiver=data.get("waiver", {}),

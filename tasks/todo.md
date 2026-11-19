@@ -27,7 +27,7 @@
   - 验收：一份玩具尺子（3 档、6 条）lint 通过；重复 id、引用不存在的档位、未知探针各报错，退出 2。
   - 依赖：T2、T3。文件：`schemas/clauses.v1.json`、`src/repo_readiness/clauses/`、`tests/test_clauses.py`、`tests/fixtures/rulesets/toy-base.json`。
 
-- [ ] **T5 打分函数**（S）
+- [x] **T5 打分函数**（S）
   - 做什么：纯函数：输入条款集 + 每条结果，输出档位、各档必须 / 建议计数、下一档差什么。规则来自尺子的 `gate`：必须全满足；建议项按尺子里的规则（`ratio` 向下取整，或 `max_missing` 每档最多缺 n 条，档位可单独覆盖）；逐档累进；N/A 过半判未达到；`unknown` 按不满足计但单列；豁免过期按不满足、不可豁免条款的豁免无效；`enforce_from` 之前按建议计；应用取最低。
   - 验收：表驱动测试覆盖上述每条规则，且每条都有一个"刚好差一点"的反例。
   - 依赖：T4。文件：`src/repo_readiness/detect/score.py`、`tests/test_score.py`。
