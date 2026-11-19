@@ -1,0 +1,200 @@
+{
+  "schema": "repo-readiness.clauses/v1",
+  "id": "autopr-onboarding",
+  "version": "2.0.0-trial.1",
+  "kind": "base",
+  "owner": "autopr-standard",
+  "title": "autopr 接入标准 v2.0 基础档（试转写，readiness-tool 2026-11-19；正式版归 autopr-standard）",
+  "categories": ["plugin", "contract", "frontend", "content"],
+  "tiers": [
+    { "id": "basic", "name": "基础档", "rank": 1, "trust_cap": "L2" },
+    { "id": "standard", "name": "标准档", "rank": 2, "trust_cap": "L3" },
+    { "id": "high", "name": "高档", "rank": 3, "trust_cap": "L4" }
+  ],
+  "below_lowest": { "name": "未达标", "trust_cap": "L0" },
+  "gate": {
+    "cumulative": true,
+    "must": "all",
+    "should": { "rule": "ratio", "ratio": 0.8, "rounding": "floor" },
+    "na_majority": "not-reached",
+    "unknown": "counts-as-gap",
+    "empty_tier": "not-reached"
+  },
+  "waiver": { "max_days": 90, "non_waivable": ["G2", "G5", "G6"] },
+  "app_aggregation": "min",
+  "clauses": [
+    {
+      "id": "G1", "layer": "general",
+      "requirement": "远端在 haigeerlab 组织下，默认分支是 main",
+      "guards": "判定平面根本接不上",
+      "levels": [{ "tier": "basic", "strength": "must" }],
+      "scope": "repo", "applies": { "categories": "*" }, "method": "auto",
+      "probe": { "use": "github.repo", "with": { "owner": "haigeerlab", "default_branch": "main" } },
+      "remedy": { "class": "manual", "hint": "在 haigeerlab 组织下建远端（或迁移），默认分支设为 main" },
+      "since": "2.0.0"
+    },
+    {
+      "id": "G2", "layer": "general",
+      "requirement": "main 上生效的规则同时做到：禁止 force push、禁止删除、变更只能经 PR 合入（不要求审批人数）",
+      "guards": "绕过裁判直接改 main",
+      "rationale": "以实际生效规则为准：旧版保护与规则集逐项取并集；规则集只认 enforcement=active；bypass 名单含 agent 身份或任何应用 / 集成判不达标（#21538）",
+      "levels": [{ "tier": "basic", "strength": "must" }],
+      "scope": "repo", "applies": { "categories": "*" }, "method": "auto",
+      "probe": { "use": "github.effective_branch_rules",
+                 "with": { "branch": "main", "require": ["no_force_push", "no_deletion", "pull_request_required"] } },
+      "remedy": { "class": "confirm", "generator": "github.branch-rules", "hint": "补勾「合并前必须有 PR」，审批人数 0；改分支保护要用户同意" },
+      "na_allowed": false,
+      "since": "2.0.0"
+    },
+    {
+      "id": "G3", "layer": "general",
+      "requirement": "CI 在 pull_request 上触发，并调用接口层的 check 入口；按改动范围跳过检查时，跳过规则确定、有测试，且 main 或每周定时任务跑全量",
+      "guards": "agent 本地以为过了，CI 上没跑；或 CI 只跑子集漏掉回归",
+      "levels": [{ "tier": "basic", "strength": "must" }],
+      "scope": "repo", "applies": { "categories": "*" }, "method": "auto",
+      "probe": { "use": "workflow.pr_runs_check", "with": { "entry": "check" } },
+      "remedy": { "class": "manual", "hint": "加一个 pull_request 触发的 workflow，调用 interface.yml 里的 check 命令" },
+      "since": "2.0.0"
+    },
+    {
+      "id": "G4", "layer": "general",
+      "requirement": "main 基线是绿的：main 上最近一次 CI 结论是 success，且在 14 天以内",
+      "guards": "在本来就红的基线上开 PR，失败说不清是谁的",
+      "rationale": "14 天 = 从检测时刻往回滚动 336 小时（#21538）",
+      "levels": [{ "tier": "basic", "strength": "must" }],
+      "scope": "repo", "applies": { "categories": "*" }, "method": "auto",
+      "probe": { "use": "github.main_ci_green", "with": { "branch": "main", "max_age_hours": 336 } },
+      "remedy": { "class": "manual", "hint": "修绿 main；提交少的仓库加每周定时运行" },
+      "since": "2.0.0"
+    },
+    {
+      "id": "G5", "layer": "general",
+      "requirement": "秘密扫描和推送保护已开启；平台不提供时，CI 里有等效的密钥检查，并且是必需检查",
+      "guards": "agent 提交时带进密钥",
+      "levels": [{ "tier": "basic", "strength": "must" }],
+      "scope": "repo", "applies": { "categories": "*" }, "method": "auto",
+      "probe": { "use": "github.secret_scanning" },
+      "remedy": { "class": "confirm", "generator": "github.secret-scanning", "hint": "开启秘密扫描与推送保护；私有仓库在 CI 加密钥检查并设为必需" },
+      "na_allowed": false,
+      "since": "2.0.0"
+    },
+    {
+      "id": "G6", "layer": "general",
+      "requirement": "workflow 安全：默认 GITHUB_TOKEN 只读，workflow 不能批准 PR；没有以高权限触发又 checkout 或执行 PR 代码的写法",
+      "guards": "外部 PR 借 workflow 拿到写权限",
+      "levels": [{ "tier": "basic", "strength": "must" }],
+      "scope": "repo", "applies": { "categories": "*" }, "method": "auto",
+      "probe": { "all": [ { "use": "github.workflow_permissions" }, { "use": "workflow.no_dangerous_triggers" } ] },
+      "remedy": { "class": "confirm", "generator": "github.workflow-permissions", "hint": "仓库设置里把默认 token 设为只读、关闭 workflow 批准 PR；去掉危险触发写法" },
+      "na_allowed": false,
+      "since": "2.0.0"
+    },
+    {
+      "id": "G7", "layer": "general",
+      "requirement": "登记文件齐全且能解析：.github/autopr/readiness.yml、risk-tiers.yml、interface.yml；readiness.yml 的 owner 是本机信箱登记的通信名",
+      "guards": "没人接降级通知；高风险路径没分档就被放行；框架找不到入口",
+      "rationale": "owner 只在本机检测时查；CI 沿用上次结论，上次结论超过 90 天按 unknown（#21538）",
+      "levels": [{ "tier": "basic", "strength": "must" }],
+      "scope": "repo", "applies": { "categories": "*" }, "method": "auto",
+      "probe": { "all": [
+        { "use": "config.parses", "with": { "path": ".github/autopr/readiness.yml", "format": "yaml" } },
+        { "use": "config.parses", "with": { "path": ".github/autopr/risk-tiers.yml", "format": "yaml" } },
+        { "use": "config.parses", "with": { "path": ".github/autopr/interface.yml", "format": "yaml" } },
+        { "use": "registry.owner_registered", "with": { "path": ".github/autopr/readiness.yml", "key": "owner" } }
+      ] },
+      "remedy": { "class": "auto", "generator": "autopr.registration-files", "hint": "生成三个登记文件的骨架，由负责会话补全并提交（T4，人合并）" },
+      "since": "2.0.0"
+    },
+    {
+      "id": "V1", "layer": "capability",
+      "requirement": "有一个全量确定性检查入口（check）：本地和 CI 调用的是同一个入口；同一提交跑两次结论相同；不需要交互，不依赖外网",
+      "guards": "本地过、CI 不过；结论随机；agent 不知道该跑什么",
+      "levels": [{ "tier": "basic", "strength": "must" }],
+      "scope": "repo", "applies": { "categories": "*" }, "method": "interface",
+      "probe": { "use": "entry.run", "with": { "entry": "check", "mode": "full" } },
+      "remedy": { "class": "manual", "hint": "把现有检查命令登记到 interface.yml 的 check；基础档用包装器即可" },
+      "since": "2.0.0"
+    },
+    {
+      "id": "V2", "layer": "capability",
+      "requirement": "有快速反馈：只检查改动部分的快档（check --changed），通常 2 分钟内给出结论",
+      "guards": "每次全量太慢，agent 和人都倾向跳过自检",
+      "rationale": "只在基础档计一次（标准档表中的重复是排版问题，#21538）",
+      "levels": [{ "tier": "basic", "strength": "should" }],
+      "scope": "repo", "applies": { "categories": ["plugin", "frontend"] }, "method": "interface",
+      "probe": { "use": "entry.run", "with": { "entry": "check", "mode": "changed" } },
+      "remedy": { "class": "manual", "hint": "在 interface.yml 的 check 下加 changed 命令" },
+      "since": "2.0.0"
+    },
+    {
+      "id": "D1", "layer": "capability",
+      "requirement": "agent 指令文件写明三件事：检查入口；\"先问\"的边界；autopr 例外（agent 身份可在 autopr/* 分支上提交、推送，main、tag、发版仍然先问）",
+      "guards": "agent 不知道怎么自检、哪里不能碰；没有例外则根本动不了手",
+      "levels": [{ "tier": "basic", "strength": "must" }],
+      "scope": "repo", "applies": { "categories": "*" }, "method": "declare",
+      "probe": { "all": [
+        { "any": [
+          { "use": "fs.contains", "with": { "path": "CLAUDE.md", "pattern": "check" } },
+          { "use": "fs.contains", "with": { "path": "AGENTS.md", "pattern": "check" } }
+        ] },
+        { "use": "declare", "with": { "key": "D1" }, "then": { "use": "judge", "with": { "question": "指令文件是否同时写明检查入口、先问边界、autopr/* 例外？" } } }
+      ] },
+      "remedy": { "class": "confirm", "generator": "instructions.autopr-exception", "hint": "在指令文件加 autopr/* 例外段落；改先问边界要用户同意" },
+      "since": "2.0.0"
+    },
+    {
+      "id": "D2", "layer": "capability",
+      "requirement": "指令文件精简、手工维护：只写判断题和边界；每条规则要么指向执行它的检查，要么标明\"这是判断题，没有检查\"；不放自动生成的仓库概览",
+      "guards": "自动生成的长上下文让成本上升、成功率不升；规则只写在文字里，读漏一次就失守",
+      "levels": [{ "tier": "basic", "strength": "should" }, { "tier": "standard", "strength": "must" }],
+      "scope": "repo", "applies": { "categories": "*" }, "method": "declare",
+      "probe": { "use": "declare", "with": { "key": "D2" }, "then": { "use": "judge" } },
+      "remedy": { "class": "manual", "hint": "删去自动生成的概览；每条规则标出执行者或注明是判断题" },
+      "since": "2.0.0"
+    },
+    {
+      "id": "E1", "layer": "capability",
+      "requirement": "有第三方依赖时，依赖版本锁定，CI 按锁定版本安装",
+      "guards": "同一提交两次安装结果不同，检查结论不可信",
+      "levels": [{ "tier": "basic", "strength": "must" }],
+      "scope": "app", "applies": { "categories": "*", "when": { "use": "ecosystem.has_dependencies" } }, "method": "auto",
+      "probe": { "use": "ecosystem.lockfile_installed" },
+      "remedy": { "class": "manual", "hint": "锁文件入库，CI 用锁定安装（如 npm ci、pnpm install --frozen-lockfile）" },
+      "na_justification_required": false,
+      "since": "2.0.0"
+    },
+    {
+      "id": "K1", "layer": "capability",
+      "requirement": "开始维护\"规则 ↔ 执行者\"表，至少 1 条规则由检查、类型或架构约束强制执行",
+      "guards": "约束只在口头上",
+      "levels": [{ "tier": "basic", "strength": "should" }],
+      "scope": "repo", "applies": { "categories": ["plugin", "frontend"] }, "method": "declare",
+      "probe": { "use": "declare", "with": { "key": "K1" }, "then": { "use": "judge" } },
+      "remedy": { "class": "manual", "hint": "在指令文件加规则 ↔ 执行者表，至少一条指向现有检查器" },
+      "since": "2.0.0"
+    },
+    {
+      "id": "R1", "layer": "capability",
+      "requirement": "risk-tiers.yml 里，发布相关路径和流水线依赖的接口是 T4；负责人逐条核对过本仓库的 T3、T4 路径",
+      "guards": "autopr 合入的改动直接到用户手里；高风险改动被误判成低风险",
+      "levels": [{ "tier": "basic", "strength": "must" }],
+      "scope": "repo", "applies": { "categories": "*" }, "method": "declare",
+      "probe": { "all": [
+        { "use": "risk.template_paths_kept", "with": { "path": ".github/autopr/risk-tiers.yml" } },
+        { "use": "declare", "with": { "key": "R1" }, "then": { "use": "judge", "with": { "question": "是否有逐条核对 T3、T4 路径的记录？" } } }
+      ] },
+      "remedy": { "class": "manual", "hint": "按类别模板写 risk-tiers.yml，逐条核对 T3 / T4 路径并在 readiness.yml 留记录" },
+      "since": "2.0.0"
+    },
+    {
+      "id": "R2", "layer": "capability",
+      "requirement": "写下回滚路径：撤回一次合并要哪些步骤、谁执行、大概多久",
+      "guards": "出事临时找办法",
+      "levels": [{ "tier": "basic", "strength": "should" }, { "tier": "standard", "strength": "must" }],
+      "scope": "app", "applies": { "categories": "*" }, "method": "declare",
+      "probe": { "use": "declare", "with": { "key": "R2" }, "then": { "use": "judge" } },
+      "remedy": { "class": "manual", "hint": "在指令文件或 docs/ 写回滚步骤" },
+      "since": "2.0.0"
+    }
+  ]
+}

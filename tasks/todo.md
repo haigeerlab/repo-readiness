@@ -51,7 +51,7 @@
 
 ## 阶段 2：基础档探针
 
-- [ ] **T8 v2.0 基础档试转写**（S）
+- [x] **T8 v2.0 基础档试转写**（S）
   - 做什么：把 v2.0 基础档全部条款（G1–G7、V1、V2、D1、D2、E1、K1、R1、R2）写成 `clauses.v1`，作为测试夹具；标注"试转写，正式版归 `autopr-standard`"。
   - 验收：lint 通过；每条的强度、档位、适用、范围与标准原文逐条核对一致（核对表写进夹具旁的 README）。
   - 依赖：检查点 A。文件：`tests/fixtures/rulesets/autopr-onboarding-2.0-basic.trial.json`、同目录 `README.md`。
