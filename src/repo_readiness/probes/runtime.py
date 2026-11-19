@@ -16,17 +16,23 @@ tool cannot actually perform.
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from repo_readiness.probes.catalog import CATALOG
 
-__all__ = ["ProbeContext", "ProbeResult", "evaluate", "register"]
+__all__ = ["HarnessError", "ProbeContext", "ProbeResult", "evaluate", "register"]
+
+
+class HarnessError(Exception):
+    """A problem with the test harness (e.g. a missing recording). Never swallowed into "unknown"."""
 
 
 @dataclass(frozen=True)
 class ProbeContext:
     repo_root: Path
     base: str = ""  # path prefix of the app being judged, relative to repo_root ("" = repo)
+    github: Optional[Any] = None  # platform.github.GitHub, or None when GitHub access is off
+    repo_name: Optional[str] = None  # owner/name on GitHub
 
     @property
     def base_dir(self) -> Path:
@@ -40,6 +46,7 @@ class ProbeResult:
     missing: Optional[str] = None
     error: Optional[str] = None
     not_implemented: List[str] = field(default_factory=list)
+    env_error: bool = False  # could not look (GitHub unreachable, not logged in, ...), not "the repo lacks it"
 
 
 ProbeFn = Callable[[Dict, ProbeContext], ProbeResult]
@@ -64,6 +71,7 @@ def _merge(results: List[ProbeResult], status: str, missing: Optional[str] = Non
         out.not_implemented.extend(n for n in r.not_implemented if n not in out.not_implemented)
         if r.error:
             errors.append(r.error)
+        out.env_error = out.env_error or r.env_error
     out.error = "; ".join(errors) or None
     return out
 
@@ -90,6 +98,8 @@ def evaluate(expr: Dict, ctx: ProbeContext) -> ProbeResult:
     else:
         try:
             first = fn(expr.get("with", {}), ctx)
+        except HarnessError:
+            raise
         except Exception as e:  # a probe bug must never turn into "met" or "gap"
             first = ProbeResult(status="unknown", error="probe %s crashed: %s: %s" % (name, type(e).__name__, e))
     if "then" not in expr or first.status != "met":
@@ -100,4 +110,4 @@ def evaluate(expr: Dict, ctx: ProbeContext) -> ProbeResult:
 
 
 # Import implementations so they register themselves.
-from repo_readiness.probes import fs  # noqa: E402,F401  (registration side effect)
+from repo_readiness.probes import fs, github  # noqa: E402,F401  (registration side effect)

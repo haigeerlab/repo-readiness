@@ -8,7 +8,7 @@ import hashlib
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from repo_readiness.clauses import Clause, Ruleset
 from repo_readiness.detect.score import REPO
@@ -39,6 +39,7 @@ class Scan:
     results: List[ClauseResult]
     not_evaluated: List[Dict[str, str]]
     errors: List[Dict[str, str]]
+    env_errors: List[str] = field(default_factory=list)  # the environment, not the repo, stopped a probe
 
 
 def _targets(c: Clause, apps: Dict[str, str]) -> List[Tuple[str, str]]:
@@ -68,17 +69,19 @@ def _judge_one(c: Clause, ctx: ProbeContext, category: Optional[str]) -> Tuple[C
 
 
 def scan(ruleset: Ruleset, repo_root: Path, *, category: Optional[str] = None,
-         apps: Optional[Dict[str, str]] = None) -> Scan:
+         apps: Optional[Dict[str, str]] = None, github: Optional[Any] = None,
+         repo_name: Optional[str] = None) -> Scan:
     apps = apps or {}
     results = []  # type: List[ClauseResult]
     not_evaluated = []  # type: List[Dict[str, str]]
     errors = []  # type: List[Dict[str, str]]
+    env_errors = []  # type: List[str]
     for c in ruleset.clauses:
         if c.lifecycle != "active":
             not_evaluated.append({"clause": c.id, "reason": "lifecycle is %s" % c.lifecycle})
             continue
         for target, path in _targets(c, apps):
-            ctx = ProbeContext(repo_root=repo_root, base=path)
+            ctx = ProbeContext(repo_root=repo_root, base=path, github=github, repo_name=repo_name)
             res, probe = _judge_one(c, ctx, category)
             res.target = target
             results.append(res)
@@ -87,4 +90,6 @@ def scan(ruleset: Ruleset, repo_root: Path, *, category: Optional[str] = None,
                                       "reason": "probe %s is not implemented in this version" % name})
             if res.error and not probe.not_implemented:
                 errors.append({"clause": c.id, "target": target, "message": res.error})
-    return Scan(results=results, not_evaluated=not_evaluated, errors=errors)
+            if probe.env_error and res.error not in env_errors:
+                env_errors.append(res.error)
+    return Scan(results=results, not_evaluated=not_evaluated, errors=errors, env_errors=env_errors)

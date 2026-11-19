@@ -5,7 +5,7 @@ import sys
 from typing import List, Optional
 
 from repo_readiness import __version__
-from repo_readiness.proc import EXIT_FAIL, EXIT_OK, EXIT_USAGE
+from repo_readiness.proc import EXIT_ENV_NOT_READY, EXIT_FAIL, EXIT_OK, EXIT_USAGE
 
 
 def _clauses_lint(args: argparse.Namespace) -> int:
@@ -26,6 +26,19 @@ def _clauses_lint(args: argparse.Namespace) -> int:
 def _usage_error(msg: str) -> int:
     print("error: %s" % msg, file=sys.stderr)
     return EXIT_USAGE
+
+
+def _github_client(args: argparse.Namespace):
+    from repo_readiness.platform.github import GitHub, LiveTransport, RecordingTransport, ReplayTransport
+    if args.github_replay:
+        return GitHub(ReplayTransport(args.github_replay))
+    mode = args.github or ("live" if args.repo_name else "off")
+    if mode == "off":
+        return None
+    transport = LiveTransport()
+    if args.github_record:
+        transport = RecordingTransport(transport, args.github_record)
+    return GitHub(transport)
 
 
 def _relative_path_ok(p: str) -> bool:
@@ -80,7 +93,8 @@ def _check(args: argparse.Namespace) -> int:
     except ValueError:
         return _usage_error("--as-of expects YYYY-MM-DD, got %r" % args.as_of)
 
-    sc = scan(ruleset, repo, category=args.category, apps=apps)
+    github = _github_client(args)
+    sc = scan(ruleset, repo, category=args.category, apps=apps, github=github, repo_name=args.repo_name)
     outcomes = {(r.clause, r.target): Outcome(r.status) for r in sc.results}
     result = score(ruleset, outcomes, apps=list(apps), today=as_of)
     report = rpt.build(ruleset, sc, result, repo_path=repo.resolve(), repo_name=args.repo_name,
@@ -90,6 +104,11 @@ def _check(args: argparse.Namespace) -> int:
     text = rpt.summary(report, ruleset)
     rpt.write(report, text, Path(args.out))
     sys.stdout.write(text)
+    if sc.env_errors:
+        for msg in sc.env_errors:
+            print("environment not ready: %s" % msg, file=sys.stderr)
+        print("results that depend on it are unknown; fix the environment and re-run", file=sys.stderr)
+        return EXIT_ENV_NOT_READY
     if args.min_tier and not report["target"]["met"]:
         return EXIT_FAIL
     return EXIT_OK
@@ -119,6 +138,10 @@ def build_parser() -> argparse.ArgumentParser:
                             "与 ROOT/** 一起把文件对应到应用；可重复")
     check.add_argument("--repo-name", help="owner/name，写进报告")
     check.add_argument("--min-tier", help="达到这一档退出 0，否则退出 1")
+    check.add_argument("--github", choices=["live", "off"],
+                       help="是否只读访问 GitHub（经 gh api，仅 GET）；给了 --repo-name 时默认 live，否则 off")
+    check.add_argument("--github-record", metavar="DIR", help="把 GitHub 返回录制到 DIR（用于测试夹具）")
+    check.add_argument("--github-replay", metavar="DIR", help="只用 DIR 里录制的 GitHub 返回，不联网")
     check.add_argument("--as-of", help="按这一天（YYYY-MM-DD）判断豁免与生效日期，默认今天（UTC）")
     check.set_defaults(func=_check)
 

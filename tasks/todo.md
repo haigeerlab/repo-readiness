@@ -56,7 +56,8 @@
   - 验收：lint 通过；每条的强度、档位、适用、范围与标准原文逐条核对一致（核对表写进夹具旁的 README）。
   - 依赖：检查点 A。文件：`tests/fixtures/rulesets/autopr-onboarding-2.0-basic.trial.json`、同目录 `README.md`。
 
-- [ ] **T9 GitHub 平台适配层**（S）
+- [x] **T9 GitHub 平台适配层**（S）
+  - 完成说明：顺带实现了 `github.repo`（G1，原属 T11）作为适配层的第一个使用者；`check` 遇到环境问题（gh 未登录、网络、限流、5xx、gh 缺失）退出 3，T6 欠的退出码 3 测试已补；真实录制夹具 `tests/fixtures/github/repo-readiness/`。
   - 做什么：`gh api` 只读封装（只允许 GET，其他方法直接拒绝）；录制 / 回放模式；识别 403 / 404 / 权限不足，转成"读不到"而不是"没有"。
   - 验收：非 GET 调用被拒；回放模式不联网；权限不足的返回被识别。
   - 依赖：T6。文件：`src/repo_readiness/platform/github.py`、`tests/test_github_adapter.py`。
