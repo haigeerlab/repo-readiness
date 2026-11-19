@@ -8,9 +8,11 @@ from repo_readiness.probes.runtime import ProbeContext, ProbeResult
 
 def _ready(ctx: ProbeContext) -> Optional[ProbeResult]:
     if ctx.github is None:
-        return ProbeResult(status="unknown", error="GitHub access is off for this run")
+        why = "GitHub access is off for this run"
+        return ProbeResult(status="unknown", error=why, skipped=[why])
     if not ctx.repo_name:
-        return ProbeResult(status="unknown", error="repository name unknown; pass --repo-name owner/name")
+        why = "repository name unknown; pass --repo-name owner/name"
+        return ProbeResult(status="unknown", error=why, skipped=[why])
     return None
 
 

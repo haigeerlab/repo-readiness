@@ -73,7 +73,8 @@ def _judge_one(c: Clause, ctx: ProbeContext, category: Optional[str]) -> Tuple[C
 def scan(ruleset: Ruleset, repo_root: Path, *, category: Optional[str] = None,
          apps: Optional[Dict[str, str]] = None, github: Optional[Any] = None,
          repo_name: Optional[str] = None, now: Optional[Any] = None, declarations: Optional[Any] = None,
-         registry: Optional[Any] = None, risk_templates: Optional[Any] = None) -> Scan:
+         registry: Optional[Any] = None, risk_templates: Optional[Any] = None,
+         exec_entries: bool = False) -> Scan:
     apps = apps or {}
     results = []  # type: List[ClauseResult]
     not_evaluated = []  # type: List[Dict[str, str]]
@@ -85,7 +86,8 @@ def scan(ruleset: Ruleset, repo_root: Path, *, category: Optional[str] = None,
             continue
         for target, path in _targets(c, apps):
             ctx = ProbeContext(repo_root=repo_root, base=path, github=github, repo_name=repo_name, now=now,
-                               declarations=declarations, registry=registry, risk_templates=risk_templates)
+                               declarations=declarations, registry=registry, risk_templates=risk_templates,
+                               exec_entries=exec_entries)
             res, probe = _judge_one(c, ctx, category)
             res.target = target
             res = apply_declaration(c, res, declarations)
@@ -93,7 +95,9 @@ def scan(ruleset: Ruleset, repo_root: Path, *, category: Optional[str] = None,
             for name in probe.not_implemented:
                 not_evaluated.append({"clause": c.id, "target": target,
                                       "reason": "probe %s is not implemented in this version" % name})
-            if res.error and not probe.not_implemented:
+            for why in probe.skipped:
+                not_evaluated.append({"clause": c.id, "target": target, "reason": why})
+            if res.error and not probe.not_implemented and not probe.skipped:
                 errors.append({"clause": c.id, "target": target, "message": res.error})
             if probe.env_error and res.error not in env_errors:
                 env_errors.append(res.error)

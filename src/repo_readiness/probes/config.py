@@ -46,8 +46,9 @@ def owner_registered(params: Dict, ctx: ProbeContext) -> ProbeResult:
     if not isinstance(owner, str) or not owner.strip():
         return ProbeResult(status="gap", missing="%s has no %s" % (_shown(p, ctx), params["key"]))
     if ctx.registry is None:
-        return ProbeResult(status="unknown", error="owner registry not provided for this run; pass --registry FILE "
-                                                   "(a local-only check: CI carries over the last local result)")
+        why = ("owner registry not provided for this run; pass --registry FILE "
+               "(a local-only check: CI carries over the last local result)")
+        return ProbeResult(status="unknown", error=why, skipped=[why])
     if owner in ctx.registry:
         return ProbeResult(status="met", evidence=["owner %s is registered in the mailbox" % owner])
     return ProbeResult(status="gap", missing="owner %s is not registered in the mailbox" % owner)
@@ -77,7 +78,8 @@ def template_paths_kept(params: Dict, ctx: ProbeContext) -> ProbeResult:
     if not isinstance(repo, dict):
         return ProbeResult(status="gap", missing="%s is not a mapping" % shown)
     if ctx.risk_templates is None:
-        return ProbeResult(status="unknown", error="category risk templates not provided; pass --risk-templates FILE")
+        why = "category risk templates not provided; pass --risk-templates FILE"
+        return ProbeResult(status="unknown", error=why, skipped=[why])
     cats = ctx.risk_templates.get("categories") or {}
     ext = repo.get("extends")
     if not isinstance(ext, str) or ext not in cats:

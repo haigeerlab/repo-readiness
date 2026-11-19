@@ -37,6 +37,7 @@ class ProbeContext:
     declarations: Optional[Any] = None  # detect.declarations.Declarations (readiness.yml)
     registry: Optional[Any] = None  # frozenset of registered mailbox agent names, or None if not provided
     risk_templates: Optional[Any] = None  # parsed category risk templates, or None if not provided
+    exec_entries: bool = False  # run interface.yml entries (executes repository code; opt-in)
 
     @property
     def base_dir(self) -> Path:
@@ -51,6 +52,7 @@ class ProbeResult:
     error: Optional[str] = None
     not_implemented: List[str] = field(default_factory=list)
     env_error: bool = False  # could not look (GitHub unreachable, not logged in, ...), not "the repo lacks it"
+    skipped: List[str] = field(default_factory=list)  # not evaluated in this run by choice (an input was not given)
 
 
 ProbeFn = Callable[[Dict, ProbeContext], ProbeResult]
@@ -76,6 +78,7 @@ def _merge(results: List[ProbeResult], status: str, missing: Optional[str] = Non
         if r.error:
             errors.append(r.error)
         out.env_error = out.env_error or r.env_error
+        out.skipped.extend(x for x in r.skipped if x not in out.skipped)
     out.error = "; ".join(errors) or None
     return out
 
@@ -114,4 +117,4 @@ def evaluate(expr: Dict, ctx: ProbeContext) -> ProbeResult:
 
 
 # Import implementations so they register themselves.
-from repo_readiness.probes import config, fs, github, workflow  # noqa: E402,F401  (registration side effect)
+from repo_readiness.probes import config, entry, fs, github, workflow  # noqa: E402,F401  (registration side effect)

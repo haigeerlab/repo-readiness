@@ -95,7 +95,8 @@
   - 完成说明：先发布 `v0.2.0`（`c77aaba`，用户同意）；用其干净检出只读检测 agent-relay 远端 main `66abdd9`：未达标 L0，G1/G4/G5/G6 满足，G2 只缺 PR，G3/G7/D1/R1 缺登记文件与指令说明，V1/V2/E1 无法判定。结论、报告、摘要在 `out/m1-agent-relay/`（不进 git），`conclusion verify` 通过。
 - [x] 结论与报告放在本仓库输出目录；**给用户看摘要后**发给 `autopr-design`（#21634）。写进 agent-relay 仓库由用户和 `agent-relay-owner` 决定
 
-- [ ] **T14 entry 探针**（M）
+- [x] **T14 entry 探针**（M）
+  - 完成说明：改用 `git clone --shared` 到临时目录（`git worktree add` 会写被测仓库的 .git，违反只读），只跑已提交的 HEAD；环境变量清理后只传基本项与 `AUTOPR_*`；原生报告按 `schemas/vendor/entry-report.v1.json`（标准侧原样拷贝）校验并核对 head。同时把"没开 --exec-entries / 没传 --registry / 没传 --risk-templates / GitHub 关闭或缺 --repo-name"从"探针错误"改记为"未评估"，否则 conclude 会因此拒签。
   - 做什么：按接口契约调用 `interface.yml` 的入口：临时 `git worktree` 检出被测 SHA、注入 `AUTOPR_*` 环境变量、超时、读报告或按退出码生成最小报告、跑后核对 git 状态未变、删除 worktree；仅在 `--exec-entries` 时执行，否则 `unknown`。覆盖 V1、V2。
   - 验收：玩具仓库的入口退出 0 / 1 / 2 / 3 / 超时 / 改动工作区六种情况结论正确；未开 `--exec-entries` 时一律 `unknown` 且列入 `not_evaluated`。
   - 依赖：T6。文件：`src/repo_readiness/probes/entry.py`、`tests/test_probe_entry.py`。

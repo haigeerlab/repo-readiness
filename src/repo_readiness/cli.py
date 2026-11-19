@@ -126,7 +126,7 @@ def _check(args: argparse.Namespace) -> int:
 
     github = _github_client(args)
     sc = scan(ruleset, repo, category=category, apps=apps, github=github, repo_name=args.repo_name, now=now,
-              declarations=decls, registry=registry, risk_templates=risk_templates)
+              declarations=decls, registry=registry, risk_templates=risk_templates, exec_entries=args.exec_entries)
     if decls.error:
         sc.errors.append({"clause": "*", "target": "repo", "message": decls.error})
     outcomes = {(r.clause, r.target): Outcome(r.status, waiver_until=datetime.date.fromisoformat(r.waiver_until)
@@ -174,6 +174,8 @@ def build_parser() -> argparse.ArgumentParser:
     check.add_argument("--repo-name", help="owner/name，写进报告")
     check.add_argument("--declaration", default=".github/autopr/readiness.yml",
                        help="仓库自评文件（相对仓库根），默认 .github/autopr/readiness.yml；类别与应用在未给参数时取自它")
+    check.add_argument("--exec-entries", action="store_true",
+                       help="运行 interface.yml 登记的入口（会执行被测仓库的代码；在临时克隆里、清理过的环境变量下运行）")
     check.add_argument("--registry", metavar="FILE", help="本机信箱已登记的通信名（JSON 数组），用于核对 owner")
     check.add_argument("--risk-templates", metavar="FILE", help="风险分档的类别模板（YAML），用于核对 R1")
     check.add_argument("--min-tier", help="达到这一档退出 0，否则退出 1")
