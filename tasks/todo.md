@@ -12,7 +12,7 @@
   - 验收：`bin/repo-readiness --version </dev/null` 输出版本、退出 0；未知子命令退出 2；`run()` 超时用例返回 3。
   - 依赖：无。文件：`bin/`、`src/repo_readiness/{__init__,cli,proc}.py`、`tests/test_proc.py`、`README.md`。
 
-- [ ] **T2 YAML 子集解析器**（S）
+- [x] **T2 YAML 子集解析器**（S）
   - 做什么：块状映射、列表、行内 `{}`/`[]`、带引号和不带引号的标量（含日期、布尔、数字的保守识别）、注释；不支持的语法（锚点、别名、多文档、`|`/`>` 块、标签）报带行号的错。
   - 验收：标准侧 `readiness.example.v2.yml`、`interface.example.yml`（拷成测试夹具）解析结果与手写期望一致；6 类不支持语法各有用例，抛出解析错误。
   - 依赖：T1。文件：`src/repo_readiness/yamlsub.py`、`tests/test_yamlsub.py`、`tests/fixtures/yaml/`。

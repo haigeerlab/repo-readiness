@@ -1,0 +1,69 @@
+# .github/autopr/readiness.yml 自评模板（接入标准 v2.0，草案）
+# 标准全文：onboarding-standard-v2.md。本文件是 T4：永不自动合并，由人合并。
+# 每条写一个 status：
+#   met     已满足；evidence 写文件路径、行号或命令
+#   gap     未满足；plan 写计划和预计日期（建议项也要写）
+#   na      不适用；reason 写理由。条款"适用"列没覆盖本类别时直接写，否则要 approved-by（用户）
+#   waived  豁免；reason + until（≤ 90 天）+ approved-by。G2、G5、G6 不接受豁免
+# 自动条款可以不填 evidence，autopr-readiness 会自己查；填了也会复核。
+
+standard: "2.0"
+repo: haigeerlab/<repo>
+category: plugin            # plugin | contract | frontend | content
+owner: <通信名>              # 本机信箱登记的负责会话
+target_tier: standard       # basic | standard | high
+target_reason: "<为什么是这一档，见标准 §3.1 末尾>"
+assessed_at: 2026-11-19
+assessed_by: <通信名>
+
+# monorepo 才需要；应用级条款（E1、E2、P1、P2、P3、R2、R3、S1）按应用分别填
+apps: {}
+#  site:   { path: "apps/site/" }
+#  sdk:    { path: "packages/sdk/" }
+
+general:                    # 通用层：全部自动，一般只需确认
+  G1:  { status: met }
+  G2:  { status: gap, plan: "向用户确认后补勾「合并前必须有 PR」，审批人数 0" }
+  G3:  { status: met }
+  G4:  { status: met }
+  G5:  { status: met }
+  G6:  { status: met }
+  G7:  { status: gap, plan: "写 readiness.yml、risk-tiers.yml、interface.yml" }
+  G8:  { status: met }                  # 标准档
+  G9:  { status: gap, plan: "actions 改为按 SHA 固定" }   # 标准档
+  G10: { status: met }                  # 标准档
+  G11: { status: gap, plan: "建议项" }  # 高档建议
+  G12: { status: gap }                  # 高档，接入 30 天后自动满足
+
+basic:
+  V1: { status: met, evidence: "interface.yml 的 check → /bin/bash scripts/validate.sh" }
+  V2: { status: gap, plan: "建议项：validate.sh 加 --changed 快档" }
+  D1: { status: gap, plan: "CLAUDE.md 加 autopr/* 例外，需用户同意" }
+  D2: { status: met, evidence: "CLAUDE.md 共 N 行，规则表见第 M 行" }   # 基础建议，标准必须
+  E1: { status: na, reason: "只用 Python 标准库和系统 bash，无第三方依赖" }
+  K1: { status: met, evidence: "CLAUDE.md 规则表第 1 条 → scripts/check-bash32.py" }
+  R1: { status: gap, plan: "按 plugin 模板写 risk-tiers.yml，逐条核对 T3/T4" }
+  R2: { status: gap, plan: "基础建议，标准必须：写回滚路径" }
+
+standard_tier:
+  P1: { status: met, evidence: "interface.yml 的 verify；示例证据：<链接>" }
+  E2: { status: met, evidence: "setup → <命令>；种子数据见 CLAUDE.md 第 N 行" }
+  K2: { status: met, evidence: "规则表 3 条有执行者：<检查器路径…>" }
+  K3: { status: gap, plan: "加 suppressions 入口，基线 N 条" }
+  Q1: { status: met, evidence: "scripts/test-checkers.sh：每个检查器一正一反" }
+  X1: { status: na, reason: "本仓库没有登记在 contracts.yml 的接口" }
+  Q2: { status: gap, plan: "建议项：covered_by 先覆盖 scripts/、hooks/" }
+  S1: { status: na, reason: "无第三方依赖" }
+
+high:
+  Q3: { status: gap }
+  Q4: { status: met, evidence: "scripts/mutation-check.py；最近一次存活变异体 N 个" }
+  K4: { status: gap }
+  R3: { status: gap }
+  P2: { status: gap }
+  P3: { status: gap }       # 前端必须，其余建议
+
+# 示例：适用但申请 N/A（需用户批准）
+# E2: { status: na, reason: "零运行时依赖的库，不需要种子数据和测试账号", approved-by: "<用户>" }
+# 示例：豁免
+# G9: { status: waived, reason: "等上游发布新 SHA", until: 2027-01-31, approved-by: "<用户>" }

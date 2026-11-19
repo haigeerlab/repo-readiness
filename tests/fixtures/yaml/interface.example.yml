@@ -1,0 +1,46 @@
+# .github/autopr/interface.yml 示例（接口层契约 v1，草案）
+# 契约全文：interface-contract.md。本文件是 T4。
+# 下面三个例子各自独立，实际仓库只写一个 entries 块。
+
+# --- 例 1：Shell 插件仓库（以 tier-guard 现有脚本为例，未经负责人确认） ---
+version: 1
+entries:
+  check:
+    run: "/bin/bash scripts/validate.sh"
+    timeout_minutes: 15
+    report: wrapped
+  suppressions:            # 标准档起
+    run: "python3 scripts/count_suppressions.py"   # 假设的脚本名，负责人自定
+    report: native
+    baseline: ".github/autopr/suppressions-baseline.json"
+  verify:                  # 标准档起：宿主无头冒烟，被测插件用 --plugin-dir 隔离加载
+    run: "/bin/bash scripts/verify-headless.sh"     # 假设的脚本名
+    report: native
+    network: required      # 要调用宿主模型
+    timeout_minutes: 20
+
+# --- 例 2：前端 monorepo（以 pwa-platform 为例） ---
+# version: 1
+# entries:
+#   check:
+#     run: "pnpm gate:local"
+#     timeout_minutes: 20
+#     report: wrapped
+#   setup:
+#     run: "pnpm install --frozen-lockfile && pnpm exec playwright install chromium"
+#     report: wrapped
+# apps:
+#   docs-site:
+#     path: "apps/docs/"
+#     entries:
+#       verify: { run: "pnpm --filter docs run verify:autopr", report: native, timeout_minutes: 20 }
+
+# --- 例 3：内容仓库（以 frontend-knowledge-tree 为例） ---
+# version: 1
+# entries:
+#   check:
+#     run: "node scripts/build.mjs --check"   # 现有命令是 build.mjs（校验 + 生成），是否有只校验模式待负责人确认
+#     report: wrapped
+#   verify:
+#     run: "node scripts/render-screenshots.mjs"   # 假设：渲染改动节点并截图
+#     report: native
