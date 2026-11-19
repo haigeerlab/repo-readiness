@@ -6,6 +6,7 @@ constructed cases change one field of a real recording.
 
 import copy
 import datetime
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -28,8 +29,8 @@ class Overrides:
         return self.overrides[path] if path in self.overrides else self.replay.fetch(path)
 
 
-def run(expr, repo, overrides=None, now=NOW):
-    ctx = ProbeContext(repo_root=Path("/"), github=GitHub(Overrides(repo, overrides or {})),
+def run(expr, repo, overrides=None, now=NOW, root=Path("/")):
+    ctx = ProbeContext(repo_root=root, github=GitHub(Overrides(repo, overrides or {})),
                        repo_name="haigeerlab/" + repo, now=now)
     return evaluate(expr, ctx)
 
@@ -117,10 +118,26 @@ class SecretScanningTest(unittest.TestCase):
     def test_scanning_off_is_gap(self):
         self.assertEqual(run(G5, "agent-relay", self.repo_with("agent-relay", secret_scanning="disabled")).status, "gap")
 
-    def test_not_reported_is_unknown_with_ci_hint(self):
-        r = run(G5, "agent-relay", self.repo_with("agent-relay", drop=True))
+    def test_not_reported_with_ci_is_unknown_with_ci_hint(self):
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / ".github" / "workflows").mkdir(parents=True)
+            (Path(d) / ".github" / "workflows" / "ci.yml").write_text("on: push\njobs: {}\n", encoding="utf-8")
+            r = run(G5, "agent-relay", self.repo_with("agent-relay", drop=True), root=Path(d))
         self.assertEqual(r.status, "unknown")
         self.assertIn("CI", r.error)
+
+    def test_not_reported_and_no_ci_at_all_is_gap(self):
+        # ai-dev-playbook shape: private, the platform reports nothing, and there is no CI to hold an equivalent.
+        with tempfile.TemporaryDirectory() as d:
+            r = run(G5, "agent-relay", self.repo_with("agent-relay", drop=True), root=Path(d))
+        self.assertEqual(r.status, "gap")
+        self.assertIn("no CI", r.missing)
+
+    def test_repository_not_on_github_is_gap(self):
+        gone = GhResponse("not_found", 404, {"message": "Not Found"}, "Not Found")
+        for expr in (G4, G5, G6):
+            with self.subTest(probe=expr["use"]):
+                self.assertEqual(run(expr, "agent-relay", {"repos/haigeerlab/agent-relay": gone}).status, "gap")
 
 
 class WorkflowPermissionsTest(unittest.TestCase):

@@ -209,7 +209,8 @@ def lockfile_installed(params: Dict, ctx: ProbeContext) -> ProbeResult:
         if how:
             evidence.append("CI installs %s dependencies from the lock (%s)" % (ad_id, how))
         elif not workflows:
-            missing.append("no CI workflow, so nothing installs %s dependencies from the lockfile" % ad_id)
+            evidence.append("no CI workflow, so nothing installs %s dependencies; the lockfile alone fixes the "
+                            "versions (missing CI is G3's finding)" % ad_id)
         elif _ci_installs_any(ad, workflows):
             missing.append("CI installs %s dependencies without the lockfile (use one of: %s)"
                            % (ad_id, "; ".join(ad["frozen_commands"])))

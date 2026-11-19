@@ -1,0 +1,1323 @@
+{
+  "generated_at": "2026-11-19T17:27:21Z",
+  "ruler": "2.0.0-trial.1",
+  "repos": {
+    "pwa-platform": {
+      "head": "a45a803",
+      "source": "clone of remote main",
+      "category": "frontend",
+      "expected": {
+        "G1": "met",
+        "G2": "met",
+        "G3": "met",
+        "G4": "met",
+        "G5": "met",
+        "G6": "met",
+        "V1": "met",
+        "E1": "met",
+        "G9": "met"
+      },
+      "got": {
+        "G1": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G2": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G3": {
+          "status": "gap",
+          "missing": ".github/autopr/interface.yml does not register a check entry, so CI cannot be shown to run the same entry as local runs",
+          "error": null
+        },
+        "G4": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G5": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G6": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G7": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found; .github/autopr/risk-tiers.yml not found; .github/autopr/interface.yml not found; .github/autopr/readiness.yml not found",
+          "error": null
+        },
+        "V1": {
+          "status": "unknown",
+          "missing": null,
+          "error": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        "V2": {
+          "status": "unknown",
+          "missing": null,
+          "error": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        "D1": {
+          "status": "gap",
+          "missing": "none of: CLAUDE.md has no line matching 'check'; AGENTS.md has no line matching 'check'; .github/autopr/readiness.yml not found, so D1 has no self-assessment",
+          "error": null
+        },
+        "D2": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so D2 has no self-assessment",
+          "error": null
+        },
+        "E1": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "K1": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so K1 has no self-assessment",
+          "error": null
+        },
+        "R1": {
+          "status": "gap",
+          "missing": ".github/autopr/risk-tiers.yml not found; .github/autopr/readiness.yml not found, so R1 has no self-assessment",
+          "error": null
+        },
+        "R2": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so R2 has no self-assessment",
+          "error": null
+        },
+        "G9": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        }
+      },
+      "not_evaluated": [
+        {
+          "clause": "V1",
+          "target": "repo",
+          "reason": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        {
+          "clause": "V2",
+          "target": "repo",
+          "reason": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        }
+      ],
+      "errors": []
+    },
+    "agent-relay": {
+      "head": "6abaae5",
+      "source": "clone of remote main",
+      "category": "plugin",
+      "expected": {
+        "G1": "met",
+        "G2": "gap",
+        "G3": "met",
+        "G4": "met",
+        "G5": "met",
+        "G6": "met",
+        "V1": "met",
+        "E1": "met",
+        "G9": "met"
+      },
+      "got": {
+        "G1": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G2": {
+          "status": "gap",
+          "missing": "pull_request_required 未生效",
+          "error": null
+        },
+        "G3": {
+          "status": "gap",
+          "missing": ".github/autopr/interface.yml does not register a check entry, so CI cannot be shown to run the same entry as local runs",
+          "error": null
+        },
+        "G4": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G5": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G6": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G7": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found; .github/autopr/risk-tiers.yml not found; .github/autopr/interface.yml not found; .github/autopr/readiness.yml not found",
+          "error": null
+        },
+        "V1": {
+          "status": "unknown",
+          "missing": null,
+          "error": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        "V2": {
+          "status": "unknown",
+          "missing": null,
+          "error": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        "D1": {
+          "status": "gap",
+          "missing": "none of: CLAUDE.md has no line matching 'check'; AGENTS.md has no line matching 'check'; .github/autopr/readiness.yml not found, so D1 has no self-assessment",
+          "error": null
+        },
+        "D2": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so D2 has no self-assessment",
+          "error": null
+        },
+        "E1": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "K1": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so K1 has no self-assessment",
+          "error": null
+        },
+        "R1": {
+          "status": "gap",
+          "missing": ".github/autopr/risk-tiers.yml not found; .github/autopr/readiness.yml not found, so R1 has no self-assessment",
+          "error": null
+        },
+        "R2": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so R2 has no self-assessment",
+          "error": null
+        },
+        "G9": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        }
+      },
+      "not_evaluated": [
+        {
+          "clause": "V1",
+          "target": "repo",
+          "reason": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        {
+          "clause": "V2",
+          "target": "repo",
+          "reason": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        }
+      ],
+      "errors": []
+    },
+    "spec-guard-plugin": {
+      "head": "d4a2105",
+      "source": "clone of remote main",
+      "category": "plugin",
+      "expected": {
+        "G1": "met",
+        "G2": "gap",
+        "G3": "met",
+        "G4": "met",
+        "G5": "met",
+        "G6": "met",
+        "V1": "met",
+        "E1": "met",
+        "G9": "gap"
+      },
+      "got": {
+        "G1": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G2": {
+          "status": "gap",
+          "missing": "pull_request_required 未生效",
+          "error": null
+        },
+        "G3": {
+          "status": "gap",
+          "missing": ".github/autopr/interface.yml does not register a check entry, so CI cannot be shown to run the same entry as local runs",
+          "error": null
+        },
+        "G4": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G5": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G6": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G7": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found; .github/autopr/risk-tiers.yml not found; .github/autopr/interface.yml not found; .github/autopr/readiness.yml not found",
+          "error": null
+        },
+        "V1": {
+          "status": "unknown",
+          "missing": null,
+          "error": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        "V2": {
+          "status": "unknown",
+          "missing": null,
+          "error": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        "D1": {
+          "status": "gap",
+          "missing": "none of: CLAUDE.md has no line matching 'check'; AGENTS.md has no line matching 'check'; .github/autopr/readiness.yml not found, so D1 has no self-assessment",
+          "error": null
+        },
+        "D2": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so D2 has no self-assessment",
+          "error": null
+        },
+        "E1": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "K1": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so K1 has no self-assessment",
+          "error": null
+        },
+        "R1": {
+          "status": "gap",
+          "missing": ".github/autopr/risk-tiers.yml not found; .github/autopr/readiness.yml not found, so R1 has no self-assessment",
+          "error": null
+        },
+        "R2": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so R2 has no self-assessment",
+          "error": null
+        },
+        "G9": {
+          "status": "gap",
+          "missing": "not pinned to a commit SHA: ci.yml: actions/checkout@v7",
+          "error": null
+        }
+      },
+      "not_evaluated": [
+        {
+          "clause": "V1",
+          "target": "repo",
+          "reason": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        {
+          "clause": "V2",
+          "target": "repo",
+          "reason": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        }
+      ],
+      "errors": []
+    },
+    "tab-leader": {
+      "head": "160abde",
+      "source": "clone of remote main",
+      "category": "frontend",
+      "expected": {
+        "G1": "met",
+        "G2": "gap",
+        "G3": "met",
+        "G4": "met",
+        "G5": "met",
+        "G6": "met",
+        "V1": "gap",
+        "E1": "met",
+        "G9": "gap"
+      },
+      "got": {
+        "G1": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G2": {
+          "status": "gap",
+          "missing": "no_force_push 未生效; no_deletion 未生效; pull_request_required 未生效",
+          "error": null
+        },
+        "G3": {
+          "status": "gap",
+          "missing": ".github/autopr/interface.yml does not register a check entry, so CI cannot be shown to run the same entry as local runs",
+          "error": null
+        },
+        "G4": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G5": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G6": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G7": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found; .github/autopr/risk-tiers.yml not found; .github/autopr/interface.yml not found; .github/autopr/readiness.yml not found",
+          "error": null
+        },
+        "V1": {
+          "status": "unknown",
+          "missing": null,
+          "error": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        "V2": {
+          "status": "unknown",
+          "missing": null,
+          "error": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        "D1": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so D1 has no self-assessment",
+          "error": null
+        },
+        "D2": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so D2 has no self-assessment",
+          "error": null
+        },
+        "E1": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "K1": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so K1 has no self-assessment",
+          "error": null
+        },
+        "R1": {
+          "status": "gap",
+          "missing": ".github/autopr/risk-tiers.yml not found; .github/autopr/readiness.yml not found, so R1 has no self-assessment",
+          "error": null
+        },
+        "R2": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so R2 has no self-assessment",
+          "error": null
+        },
+        "G9": {
+          "status": "gap",
+          "missing": "not pinned to a commit SHA: ci.yml: actions/checkout@v7, ci.yml: pnpm/action-setup@v6, ci.yml: actions/setup-node@v7, ci.yml: actions/upload-artifact@v7",
+          "error": null
+        }
+      },
+      "not_evaluated": [
+        {
+          "clause": "V1",
+          "target": "repo",
+          "reason": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        {
+          "clause": "V2",
+          "target": "repo",
+          "reason": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        }
+      ],
+      "errors": []
+    },
+    "sso-browser-sdk": {
+      "head": "987e164",
+      "source": "clone of remote main",
+      "category": "frontend",
+      "expected": {
+        "G1": "met",
+        "G2": "gap",
+        "G3": "met",
+        "G4": "gap",
+        "G5": "met",
+        "G6": "met",
+        "V1": "met",
+        "E1": "met",
+        "G9": "gap"
+      },
+      "got": {
+        "G1": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G2": {
+          "status": "gap",
+          "missing": "no_force_push 未生效; no_deletion 未生效; pull_request_required 未生效",
+          "error": null
+        },
+        "G3": {
+          "status": "gap",
+          "missing": ".github/autopr/interface.yml does not register a check entry, so CI cannot be shown to run the same entry as local runs",
+          "error": null
+        },
+        "G4": {
+          "status": "gap",
+          "missing": "latest run is 1039 h old, limit 336 h",
+          "error": null
+        },
+        "G5": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G6": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G7": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found; .github/autopr/risk-tiers.yml not found; .github/autopr/interface.yml not found; .github/autopr/readiness.yml not found",
+          "error": null
+        },
+        "V1": {
+          "status": "unknown",
+          "missing": null,
+          "error": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        "V2": {
+          "status": "unknown",
+          "missing": null,
+          "error": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        "D1": {
+          "status": "gap",
+          "missing": "none of: CLAUDE.md has no line matching 'check'; AGENTS.md has no line matching 'check'; .github/autopr/readiness.yml not found, so D1 has no self-assessment",
+          "error": null
+        },
+        "D2": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so D2 has no self-assessment",
+          "error": null
+        },
+        "E1": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "K1": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so K1 has no self-assessment",
+          "error": null
+        },
+        "R1": {
+          "status": "gap",
+          "missing": ".github/autopr/risk-tiers.yml not found; .github/autopr/readiness.yml not found, so R1 has no self-assessment",
+          "error": null
+        },
+        "R2": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so R2 has no self-assessment",
+          "error": null
+        },
+        "G9": {
+          "status": "gap",
+          "missing": "not pinned to a commit SHA: ci.yml: actions/checkout@v7, ci.yml: actions/setup-node@v7, ci.yml: actions/setup-python@v7, ci.yml: actions/setup-java@v6",
+          "error": null
+        }
+      },
+      "not_evaluated": [
+        {
+          "clause": "V1",
+          "target": "repo",
+          "reason": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        {
+          "clause": "V2",
+          "target": "repo",
+          "reason": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        }
+      ],
+      "errors": []
+    },
+    "tier-guard": {
+      "head": "fa9deec",
+      "source": "clone of remote main",
+      "category": "plugin",
+      "expected": {
+        "G1": "met",
+        "G2": "gap",
+        "G3": "gap",
+        "G4": "gap",
+        "G5": "met",
+        "G6": "met",
+        "V1": "met",
+        "E1": "na",
+        "G9": null
+      },
+      "got": {
+        "G1": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G2": {
+          "status": "gap",
+          "missing": "no_force_push 未生效; no_deletion 未生效; pull_request_required 未生效",
+          "error": null
+        },
+        "G3": {
+          "status": "gap",
+          "missing": "no workflow files",
+          "error": null
+        },
+        "G4": {
+          "status": "gap",
+          "missing": "no completed push / scheduled CI run on main among the latest 30",
+          "error": null
+        },
+        "G5": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G6": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G7": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found; .github/autopr/risk-tiers.yml not found; .github/autopr/interface.yml not found; .github/autopr/readiness.yml not found",
+          "error": null
+        },
+        "V1": {
+          "status": "unknown",
+          "missing": null,
+          "error": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        "V2": {
+          "status": "unknown",
+          "missing": null,
+          "error": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        "D1": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so D1 has no self-assessment",
+          "error": null
+        },
+        "D2": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so D2 has no self-assessment",
+          "error": null
+        },
+        "E1": {
+          "status": "na",
+          "missing": null,
+          "error": null
+        },
+        "K1": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so K1 has no self-assessment",
+          "error": null
+        },
+        "R1": {
+          "status": "gap",
+          "missing": ".github/autopr/risk-tiers.yml not found; .github/autopr/readiness.yml not found, so R1 has no self-assessment",
+          "error": null
+        },
+        "R2": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so R2 has no self-assessment",
+          "error": null
+        },
+        "G9": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        }
+      },
+      "not_evaluated": [
+        {
+          "clause": "V1",
+          "target": "repo",
+          "reason": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        {
+          "clause": "V2",
+          "target": "repo",
+          "reason": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        }
+      ],
+      "errors": []
+    },
+    "delegate-plugin": {
+      "head": "60cfabe",
+      "source": "clone of remote main",
+      "category": "plugin",
+      "expected": {
+        "G1": "met",
+        "G2": "gap",
+        "G3": "gap",
+        "G4": "gap",
+        "G5": "met",
+        "G6": "met",
+        "V1": "met",
+        "E1": "na",
+        "G9": null
+      },
+      "got": {
+        "G1": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G2": {
+          "status": "gap",
+          "missing": "no_force_push 未生效; no_deletion 未生效; pull_request_required 未生效",
+          "error": null
+        },
+        "G3": {
+          "status": "gap",
+          "missing": "no workflow files",
+          "error": null
+        },
+        "G4": {
+          "status": "gap",
+          "missing": "no completed push / scheduled CI run on main among the latest 30",
+          "error": null
+        },
+        "G5": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G6": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G7": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found; .github/autopr/risk-tiers.yml not found; .github/autopr/interface.yml not found; .github/autopr/readiness.yml not found",
+          "error": null
+        },
+        "V1": {
+          "status": "unknown",
+          "missing": null,
+          "error": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        "V2": {
+          "status": "unknown",
+          "missing": null,
+          "error": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        "D1": {
+          "status": "gap",
+          "missing": "none of: CLAUDE.md has no line matching 'check'; AGENTS.md has no line matching 'check'; .github/autopr/readiness.yml not found, so D1 has no self-assessment",
+          "error": null
+        },
+        "D2": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so D2 has no self-assessment",
+          "error": null
+        },
+        "E1": {
+          "status": "na",
+          "missing": null,
+          "error": null
+        },
+        "K1": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so K1 has no self-assessment",
+          "error": null
+        },
+        "R1": {
+          "status": "gap",
+          "missing": ".github/autopr/risk-tiers.yml not found; .github/autopr/readiness.yml not found, so R1 has no self-assessment",
+          "error": null
+        },
+        "R2": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so R2 has no self-assessment",
+          "error": null
+        },
+        "G9": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        }
+      },
+      "not_evaluated": [
+        {
+          "clause": "V1",
+          "target": "repo",
+          "reason": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        {
+          "clause": "V2",
+          "target": "repo",
+          "reason": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        }
+      ],
+      "errors": []
+    },
+    "frontend-knowledge-tree": {
+      "head": "eec5276",
+      "source": "clone of remote main",
+      "category": "content",
+      "expected": {
+        "G1": "met",
+        "G2": "gap",
+        "G3": "gap",
+        "G4": "gap",
+        "G5": "met",
+        "G6": "met",
+        "V1": "gap",
+        "E1": "met",
+        "G9": null
+      },
+      "got": {
+        "G1": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G2": {
+          "status": "gap",
+          "missing": "no_force_push 未生效; no_deletion 未生效; pull_request_required 未生效",
+          "error": null
+        },
+        "G3": {
+          "status": "gap",
+          "missing": "no workflow files",
+          "error": null
+        },
+        "G4": {
+          "status": "gap",
+          "missing": "no completed push / scheduled CI run on main among the latest 30",
+          "error": null
+        },
+        "G5": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G6": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G7": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found; .github/autopr/risk-tiers.yml not found; .github/autopr/interface.yml not found; .github/autopr/readiness.yml not found",
+          "error": null
+        },
+        "V1": {
+          "status": "unknown",
+          "missing": null,
+          "error": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        "V2": {
+          "status": "na",
+          "missing": null,
+          "error": null
+        },
+        "D1": {
+          "status": "gap",
+          "missing": "none of: CLAUDE.md has no line matching 'check'; AGENTS.md not found; .github/autopr/readiness.yml not found, so D1 has no self-assessment",
+          "error": null
+        },
+        "D2": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so D2 has no self-assessment",
+          "error": null
+        },
+        "E1": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "K1": {
+          "status": "na",
+          "missing": null,
+          "error": null
+        },
+        "R1": {
+          "status": "gap",
+          "missing": ".github/autopr/risk-tiers.yml not found; .github/autopr/readiness.yml not found, so R1 has no self-assessment",
+          "error": null
+        },
+        "R2": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so R2 has no self-assessment",
+          "error": null
+        },
+        "G9": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        }
+      },
+      "not_evaluated": [
+        {
+          "clause": "V1",
+          "target": "repo",
+          "reason": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        }
+      ],
+      "errors": []
+    },
+    "module-crew": {
+      "head": "c08fe78",
+      "source": "clone of remote main",
+      "category": "plugin",
+      "expected": {
+        "G1": "met",
+        "G2": "gap",
+        "G3": "gap",
+        "G4": "gap",
+        "G5": "met",
+        "G6": "met",
+        "V1": "gap",
+        "E1": "na",
+        "G9": null
+      },
+      "got": {
+        "G1": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G2": {
+          "status": "gap",
+          "missing": "no_force_push 未生效; no_deletion 未生效; pull_request_required 未生效",
+          "error": null
+        },
+        "G3": {
+          "status": "gap",
+          "missing": "no workflow files",
+          "error": null
+        },
+        "G4": {
+          "status": "gap",
+          "missing": "no completed push / scheduled CI run on main among the latest 30",
+          "error": null
+        },
+        "G5": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G6": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G7": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found; .github/autopr/risk-tiers.yml not found; .github/autopr/interface.yml not found; .github/autopr/readiness.yml not found",
+          "error": null
+        },
+        "V1": {
+          "status": "unknown",
+          "missing": null,
+          "error": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        "V2": {
+          "status": "unknown",
+          "missing": null,
+          "error": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        "D1": {
+          "status": "gap",
+          "missing": "none of: CLAUDE.md has no line matching 'check'; AGENTS.md not found; .github/autopr/readiness.yml not found, so D1 has no self-assessment",
+          "error": null
+        },
+        "D2": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so D2 has no self-assessment",
+          "error": null
+        },
+        "E1": {
+          "status": "na",
+          "missing": null,
+          "error": null
+        },
+        "K1": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so K1 has no self-assessment",
+          "error": null
+        },
+        "R1": {
+          "status": "gap",
+          "missing": ".github/autopr/risk-tiers.yml not found; .github/autopr/readiness.yml not found, so R1 has no self-assessment",
+          "error": null
+        },
+        "R2": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so R2 has no self-assessment",
+          "error": null
+        },
+        "G9": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        }
+      },
+      "not_evaluated": [
+        {
+          "clause": "V1",
+          "target": "repo",
+          "reason": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        {
+          "clause": "V2",
+          "target": "repo",
+          "reason": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        }
+      ],
+      "errors": []
+    },
+    "ai-dev-playbook": {
+      "head": "69d77b7",
+      "source": "clone of remote main",
+      "category": "content",
+      "expected": {
+        "G1": "gap",
+        "G2": "gap",
+        "G3": "gap",
+        "G4": "gap",
+        "G5": "gap",
+        "G6": "met",
+        "V1": "gap",
+        "E1": "na",
+        "G9": null
+      },
+      "got": {
+        "G1": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G2": {
+          "status": "gap",
+          "missing": "no_force_push 未生效; no_deletion 未生效; pull_request_required 未生效",
+          "error": null
+        },
+        "G3": {
+          "status": "gap",
+          "missing": "no workflow files",
+          "error": null
+        },
+        "G4": {
+          "status": "gap",
+          "missing": "no completed push / scheduled CI run on main among the latest 30",
+          "error": null
+        },
+        "G5": {
+          "status": "gap",
+          "missing": "GitHub reports no secret scanning for this private repository and there is no CI workflow that could hold the equivalent required check (no CI at all)",
+          "error": null
+        },
+        "G6": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G7": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found; .github/autopr/risk-tiers.yml not found; .github/autopr/interface.yml not found; .github/autopr/readiness.yml not found",
+          "error": null
+        },
+        "V1": {
+          "status": "unknown",
+          "missing": null,
+          "error": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        "V2": {
+          "status": "na",
+          "missing": null,
+          "error": null
+        },
+        "D1": {
+          "status": "gap",
+          "missing": "none of: CLAUDE.md not found; AGENTS.md not found; .github/autopr/readiness.yml not found, so D1 has no self-assessment",
+          "error": null
+        },
+        "D2": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so D2 has no self-assessment",
+          "error": null
+        },
+        "E1": {
+          "status": "na",
+          "missing": null,
+          "error": null
+        },
+        "K1": {
+          "status": "na",
+          "missing": null,
+          "error": null
+        },
+        "R1": {
+          "status": "gap",
+          "missing": ".github/autopr/risk-tiers.yml not found; .github/autopr/readiness.yml not found, so R1 has no self-assessment",
+          "error": null
+        },
+        "R2": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so R2 has no self-assessment",
+          "error": null
+        },
+        "G9": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        }
+      },
+      "not_evaluated": [
+        {
+          "clause": "V1",
+          "target": "repo",
+          "reason": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        }
+      ],
+      "errors": []
+    },
+    "session-protocol": {
+      "head": "486e1ee",
+      "source": "local checkout",
+      "category": "contract",
+      "expected": {
+        "G1": "gap",
+        "G2": "gap",
+        "G3": "gap",
+        "G4": "gap",
+        "G5": null,
+        "G6": null,
+        "V1": "unknown",
+        "E1": "na",
+        "G9": null
+      },
+      "got": {
+        "G1": {
+          "status": "gap",
+          "missing": "repository haigeerlab/session-protocol is not on GitHub (or not visible to this token)",
+          "error": null
+        },
+        "G2": {
+          "status": "gap",
+          "missing": "repository haigeerlab/session-protocol is not on GitHub (or not visible to this token)",
+          "error": null
+        },
+        "G3": {
+          "status": "gap",
+          "missing": "no workflow files",
+          "error": null
+        },
+        "G4": {
+          "status": "gap",
+          "missing": "repository haigeerlab/session-protocol is not on GitHub (or not visible to this token)",
+          "error": null
+        },
+        "G5": {
+          "status": "gap",
+          "missing": "repository haigeerlab/session-protocol is not on GitHub (or not visible to this token)",
+          "error": null
+        },
+        "G6": {
+          "status": "gap",
+          "missing": "repository haigeerlab/session-protocol is not on GitHub (or not visible to this token)",
+          "error": null
+        },
+        "G7": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found; .github/autopr/risk-tiers.yml not found; .github/autopr/interface.yml not found; .github/autopr/readiness.yml not found",
+          "error": null
+        },
+        "V1": {
+          "status": "unknown",
+          "missing": null,
+          "error": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        "V2": {
+          "status": "na",
+          "missing": null,
+          "error": null
+        },
+        "D1": {
+          "status": "gap",
+          "missing": "none of: CLAUDE.md has no line matching 'check'; AGENTS.md not found; .github/autopr/readiness.yml not found, so D1 has no self-assessment",
+          "error": null
+        },
+        "D2": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so D2 has no self-assessment",
+          "error": null
+        },
+        "E1": {
+          "status": "na",
+          "missing": null,
+          "error": null
+        },
+        "K1": {
+          "status": "na",
+          "missing": null,
+          "error": null
+        },
+        "R1": {
+          "status": "gap",
+          "missing": ".github/autopr/risk-tiers.yml not found; .github/autopr/readiness.yml not found, so R1 has no self-assessment",
+          "error": null
+        },
+        "R2": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so R2 has no self-assessment",
+          "error": null
+        },
+        "G9": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        }
+      },
+      "not_evaluated": [
+        {
+          "clause": "V1",
+          "target": "repo",
+          "reason": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        }
+      ],
+      "errors": []
+    },
+    "decision-inbox": {
+      "head": "500ea23",
+      "source": "clone of remote main",
+      "category": "plugin",
+      "expected": {
+        "G1": "met",
+        "G2": "gap",
+        "G3": "gap",
+        "G4": "gap",
+        "G5": "gap",
+        "G6": "met",
+        "V1": "unknown",
+        "E1": "na",
+        "G9": null
+      },
+      "got": {
+        "G1": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G2": {
+          "status": "gap",
+          "missing": "no_force_push 未生效; no_deletion 未生效; pull_request_required 未生效",
+          "error": null
+        },
+        "G3": {
+          "status": "gap",
+          "missing": "no workflow files",
+          "error": null
+        },
+        "G4": {
+          "status": "gap",
+          "missing": "no completed push / scheduled CI run on main among the latest 30",
+          "error": null
+        },
+        "G5": {
+          "status": "gap",
+          "missing": "secret scanning is disabled; push protection is disabled",
+          "error": null
+        },
+        "G6": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        },
+        "G7": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found; .github/autopr/risk-tiers.yml not found; .github/autopr/interface.yml not found; .github/autopr/readiness.yml not found",
+          "error": null
+        },
+        "V1": {
+          "status": "unknown",
+          "missing": null,
+          "error": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        "V2": {
+          "status": "unknown",
+          "missing": null,
+          "error": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        "D1": {
+          "status": "gap",
+          "missing": "none of: CLAUDE.md has no line matching 'check'; AGENTS.md not found; .github/autopr/readiness.yml not found, so D1 has no self-assessment",
+          "error": null
+        },
+        "D2": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so D2 has no self-assessment",
+          "error": null
+        },
+        "E1": {
+          "status": "na",
+          "missing": null,
+          "error": null
+        },
+        "K1": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so K1 has no self-assessment",
+          "error": null
+        },
+        "R1": {
+          "status": "gap",
+          "missing": ".github/autopr/risk-tiers.yml not found; .github/autopr/readiness.yml not found, so R1 has no self-assessment",
+          "error": null
+        },
+        "R2": {
+          "status": "gap",
+          "missing": ".github/autopr/readiness.yml not found, so R2 has no self-assessment",
+          "error": null
+        },
+        "G9": {
+          "status": "met",
+          "missing": null,
+          "error": null
+        }
+      },
+      "not_evaluated": [
+        {
+          "clause": "V1",
+          "target": "repo",
+          "reason": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        },
+        {
+          "clause": "V2",
+          "target": "repo",
+          "reason": "entry execution is off for this run; pass --exec-entries to run interface.yml entries"
+        }
+      ],
+      "errors": []
+    }
+  }
+}

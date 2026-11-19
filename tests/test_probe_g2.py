@@ -179,6 +179,13 @@ class PermissionTest(unittest.TestCase):
         self.assertEqual(r.status, "unknown")
         self.assertTrue(r.env_error)
 
+    def test_repository_not_on_github_is_gap_not_unknown(self):
+        # session-protocol shape: no remote at all, so there is no protection to read.
+        gone = GhResponse("not_found", 404, {"message": "Not Found"}, "Not Found")
+        r = run("repo-readiness", {"repos/haigeerlab/repo-readiness": gone})
+        self.assertEqual(r.status, "gap")
+        self.assertIn("not on GitHub", r.missing)
+
     def test_org_ruleset_is_fetched_from_the_org(self):
         rules = GhResponse("ok", 200, [{"type": t, "ruleset_source_type": "Organization", "ruleset_source": "haigeerlab",
                                         "ruleset_id": 42} for t in ("deletion", "non_fast_forward", "pull_request")])

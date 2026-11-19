@@ -138,8 +138,14 @@ class LockfileInstalledTest(Base):
         root = self.repo({"package.json": PKG, ".github/workflows/ci.yml": workflow("run: make test")})
         self.assertEqual(self.ev(root, LOCKED).status, "gap")
 
-    def test_no_ci_at_all_is_gap(self):
-        self.assertEqual(self.ev(self.repo({"package.json": PKG, "package-lock.json": "{}"}), LOCKED).status, "gap")
+    def test_no_ci_at_all_leaves_it_to_the_lockfile(self):
+        # frontend-knowledge-tree shape: locked demo dependencies, no CI. Missing CI is G3's finding, not E1's.
+        r = self.ev(self.repo({"package.json": PKG, "package-lock.json": "{}"}), LOCKED)
+        self.assertEqual(r.status, "met", r)
+        self.assertIn("no CI workflow", " ".join(r.evidence))
+
+    def test_no_ci_does_not_excuse_a_missing_lock(self):
+        self.assertEqual(self.ev(self.repo({"package.json": PKG}), LOCKED).status, "gap")
 
     def test_pinned_requirements_are_a_lock(self):
         wf = workflow("run: python -m pip install -r requirements.txt")

@@ -107,13 +107,15 @@
   - 验收：pwa-platform（`met`）、tier-guard 类无依赖仓库（`na`）、构造的"有依赖无锁文件"（`gap`）。
   - 依赖：T12。文件：`src/repo_readiness/adapters/`、`src/repo_readiness/probes/ecosystem.py`、`tests/test_probe_e1.py`。
 
-- [ ] **T16 标准答案对照**（S）
+- [x] **T16 标准答案对照**（S）
+  - 完成说明：报告 `docs/golden/2026-11-20-golden.md`。108 格中 92 格一致；16 格不一致均有原因（G3 新要求 5、V1 本次未评估 10、ai-dev-playbook G1 初评待决 1），无工具判错。G7/D1/R1 36 格全一致。过程中修 3 处工具判错（无远端、私有仓 G5、无 CI 的 E1）。
   - 做什么：`tests/golden/run_golden.py`（不进默认测试，要联网，只读）：对 12 个仓库跑 T8 尺子，把自动条款结论和 `assessment-v2.md` 的总表对比，生成 `docs/golden/2026-11-xx-golden.md`。
   - 验收：每个差异都有原因（工具错 → 修；初评错或时点不同 → 写明）。
   - 依赖：T10–T15。文件：`tests/golden/`、`docs/golden/`。
 
 ### 检查点 B
-- [ ] 全部测试通过；对照报告用户过目
+- [x] 全部测试通过（314）
+- [ ] 对照报告用户过目
 
 ## 阶段 3：裁决、复检、组合
 

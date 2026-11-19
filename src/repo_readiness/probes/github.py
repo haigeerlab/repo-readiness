@@ -13,6 +13,13 @@ def _ready(ctx: ProbeContext) -> Optional[ProbeResult]:
     if not ctx.repo_name:
         why = "repository name unknown; pass --repo-name owner/name"
         return ProbeResult(status="unknown", error=why, skipped=[why])
+    # A repository that is not on GitHub has no settings to read: every GitHub clause is a gap, not unknown.
+    r = ctx.github.get("repos/%s" % ctx.repo_name)
+    if r.env_error:
+        return ProbeResult(status="unknown", env_error=True, error="GitHub not reachable (%s): %s" % (r.status, r.message))
+    if r.status == "not_found":
+        return ProbeResult(status="gap", missing="repository %s is not on GitHub (or not visible to this token)"
+                           % ctx.repo_name)
     return None
 
 
@@ -246,6 +253,11 @@ def secret_scanning(params: Dict, ctx: ProbeContext) -> ProbeResult:
     scan = (ssa.get("secret_scanning") or {}).get("status")
     push = (ssa.get("secret_scanning_push_protection") or {}).get("status")
     if scan is None or push is None:
+        wf = ctx.repo_root / ".github" / "workflows"
+        if not (wf.is_dir() and (list(wf.glob("*.yml")) or list(wf.glob("*.yaml")))):
+            return ProbeResult(status="gap", missing=(
+                "GitHub reports no secret scanning for this %s repository and there is no CI workflow that could "
+                "hold the equivalent required check (no CI at all)" % r.data.get("visibility")))
         return ProbeResult(status="unknown", error=(
             "GitHub does not report secret scanning for this repository (%s; token without admin rights, or the "
             "platform does not offer it). The standard then requires an equivalent required secret check in CI, "
