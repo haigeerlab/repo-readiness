@@ -127,7 +127,7 @@
   - 完成说明：`load_stack` + `compose`；条款格式新增 `tighten`（只加不改）；收紧 = 保留原有每个（档位，强度）且不降，可在别的档位追加；重复定义、放宽、未知档位、改适用范围均加载失败；必须项超过 2 条只警告。`check --stack-clauses FILE（可重复）--stacks CODES`，技术栈以 readiness.yml 的 `stacks`（含 `apps.<id>.stacks`，未写则继承仓库）为准，全都没写才用检测；不一致列入报告 `stacks.to_confirm`，不计分；不属于本目标技术栈的条款判 N/A。`clauses lint STACK --base BASE`。v1 简化：tighten 对整把尺子生效，不分应用。
 
 ### 检查点 C
-- [ ] 全部测试通过；用户过目
+- [x] 全部测试通过（354）；用户过目并认可（2026-11-20）
 
 ## 阶段 4：修复与入口
 
