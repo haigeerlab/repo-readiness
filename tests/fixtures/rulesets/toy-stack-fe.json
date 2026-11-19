@@ -1,0 +1,30 @@
+{
+  "schema": "repo-readiness.clauses/v1",
+  "id": "toy-fe",
+  "version": "1.0.0",
+  "kind": "stack",
+  "stack": "FE",
+  "owner": "readiness-tool",
+  "title": "Toy front-end stack ruler for tests (not real content)",
+  "detect": { "any_of": ["package.json"] },
+  "clauses": [
+    {
+      "id": "ST-FE-1", "layer": "stack",
+      "requirement": "a tsconfig.json is committed", "guards": "type errors reach main",
+      "levels": [{ "tier": "basic", "strength": "must" }],
+      "scope": "app", "applies": { "categories": "*" }, "method": "auto",
+      "probe": { "use": "fs.exists", "with": { "path": "tsconfig.json" } }
+    },
+    {
+      "id": "ST-FE-2", "layer": "stack",
+      "requirement": "an eslint config is committed", "guards": "style drift",
+      "levels": [{ "tier": "standard", "strength": "should" }],
+      "scope": "repo", "applies": { "categories": "*" }, "method": "auto",
+      "probe": { "any": [{ "use": "fs.exists", "with": { "path": "eslint.config.js" } },
+                         { "use": "fs.exists", "with": { "path": ".eslintrc.json" } }] }
+    }
+  ],
+  "tighten": [
+    { "id": "T2", "levels": [{ "tier": "basic", "strength": "must" }, { "tier": "standard", "strength": "must" }] }
+  ]
+}

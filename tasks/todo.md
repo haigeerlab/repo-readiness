@@ -123,7 +123,8 @@
   - 完成说明：`judge` 探针标记待裁决；`check` 输出 `judgment_requests`（并写 `judgment-requests.json`），请求带证据指纹；`--judgments FILE`（`schemas/judgments.v1.json`）逐条校验：必须是本轮请求、指纹一致、引用的文件（及行号）真实存在，否则拒收并记探针错误、请求保留；`--baseline 旧报告`：证据指纹不变的沿用上次裁决（`carried-over`）。报告 v1 新增可选字段 `results[].judge_fingerprint`，`judgment_requests` 定了条目结构（只加不改）。
 - [x] **T18 复检 `diff` + 掉档信号**（M）：条款文件 v1 加可选顶层块 `drop: {consecutive_failures: 2, immediate: [ids]}`（用户 2026-11-20 定，#21609 已告知 autopr-standard；不写时默认 2 次、无立即掉档）；状态 / 档位 / 证据变化；原因类别（仓库、尺子、豁免过期、声明过期、权限或环境）；报告记录必须自动条款的连续不满足次数；`drop_signals[]`（连续两次，或 G2 / G5 / G6 一次）。验收：尺子换版本不误报退步；两次 / 一次触发规则各有正反用例。依赖：T7、T17。
   - 完成说明：`drop` 块已加进条款格式（lint 校验 immediate 的 id）；报告新增可选字段 `failure_streaks`、`held_tier`、`drop_rule`、`drop_signals`（只加不改）。**新概念"持有档位"**：一次失败在宽限内不降，达到连续次数或立即掉档条款失败时降一档；没有阻断失败时跟随算出的档位。掉档信号在 `check --baseline` 时算好写进新报告，`diff` 展示变化、档位变化原因（仓库 / 尺子 / 豁免过期 / 环境）并带出信号，有信号退出 1。接入结论仍只陈述算出的档位；持有档位与掉档信号要告诉 autopr-design。
-- [ ] **T19 尺子组合**（M）：`kind: stack`、`detect`、`tighten`；仓库 `stacks`（含按应用）；声明优先、不一致进"待确认"；放宽 / 重复定义 / 改适用范围加载失败。验收：玩具技术栈尺子不改代码能加；四类违规各报错。依赖：T4、T5。
+- [x] **T19 尺子组合**（M）：`kind: stack`、`detect`、`tighten`；仓库 `stacks`（含按应用）；声明优先、不一致进"待确认"；放宽 / 重复定义 / 改适用范围加载失败。验收：玩具技术栈尺子不改代码能加；四类违规各报错。依赖：T4、T5。
+  - 完成说明：`load_stack` + `compose`；条款格式新增 `tighten`（只加不改）；收紧 = 保留原有每个（档位，强度）且不降，可在别的档位追加；重复定义、放宽、未知档位、改适用范围均加载失败；必须项超过 2 条只警告。`check --stack-clauses FILE（可重复）--stacks CODES`，技术栈以 readiness.yml 的 `stacks`（含 `apps.<id>.stacks`，未写则继承仓库）为准，全都没写才用检测；不一致列入报告 `stacks.to_confirm`，不计分；不属于本目标技术栈的条款判 N/A。`clauses lint STACK --base BASE`。v1 简化：tighten 对整把尺子生效，不分应用。
 
 ### 检查点 C
 - [ ] 全部测试通过；用户过目

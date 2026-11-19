@@ -1,0 +1,19 @@
+{
+  "schema": "repo-readiness.clauses/v1",
+  "id": "toy-sh",
+  "version": "1.0.0",
+  "kind": "stack",
+  "stack": "SH",
+  "owner": "readiness-tool",
+  "title": "Toy shell-plugin stack ruler for tests (not real content)",
+  "detect": { "any_of": ["**/*.sh"] },
+  "clauses": [
+    {
+      "id": "ST-SH-1", "layer": "stack",
+      "requirement": "a .shellcheckrc is committed", "guards": "unchecked shell",
+      "levels": [{ "tier": "basic", "strength": "must" }],
+      "scope": "repo", "applies": { "categories": "*" }, "method": "auto",
+      "probe": { "use": "fs.exists", "with": { "path": ".shellcheckrc" } }
+    }
+  ]
+}

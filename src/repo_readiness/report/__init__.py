@@ -59,7 +59,8 @@ def build(ruleset: Ruleset, scan: Scan, score: Score, *, repo_path: Path, repo_n
           head: Optional[str], category: Optional[str], apps: Dict[str, str],
           app_paths: Optional[Dict[str, List[str]]] = None, as_of: datetime.date,
           min_tier: Optional[str], now: Optional[datetime.datetime] = None,
-          baseline_sha256: Optional[str] = None, recheck: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+          baseline_sha256: Optional[str] = None, recheck: Optional[Dict[str, Any]] = None,
+          stacks: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     now = now or datetime.datetime.now(datetime.timezone.utc)
     if score.tier:
         t = ruleset.tier(score.tier)
@@ -73,7 +74,8 @@ def build(ruleset: Ruleset, scan: Scan, score: Score, *, repo_path: Path, repo_n
         "generated_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "as_of": as_of.isoformat(),
         "repo": {"path": str(repo_path), "name": repo_name, "head": head},
-        "rulesets": [{"id": ruleset.id, "kind": ruleset.kind, "version": ruleset.version, "sha256": ruleset.sha256}],
+        "rulesets": [{k: p[k] for k in ("id", "kind", "version", "sha256")} for p in ruleset.parts] or
+                    [{"id": ruleset.id, "kind": ruleset.kind, "version": ruleset.version, "sha256": ruleset.sha256}],
         "category": category,
         "apps": [{"id": a, "root": root, "paths": (app_paths or {}).get(a) or [root + "/**"],
                   "tier": unit_tier.get(a), "trust_cap": _cap(ruleset, unit_tier.get(a))}
@@ -91,6 +93,8 @@ def build(ruleset: Ruleset, scan: Scan, score: Score, *, repo_path: Path, repo_n
     }
     if recheck:
         report.update(recheck)
+    if stacks is not None:
+        report["stacks"] = stacks
     if min_tier:
         rank = {t.id: t.rank for t in ruleset.tiers}
         reached = rank.get(score.tier, 0) if score.tier else 0

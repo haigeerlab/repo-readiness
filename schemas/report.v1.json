@@ -148,6 +148,21 @@
         }
       }
     },
+    "stacks": {
+      "type": "object",
+      "description": "Stack rulers in use (added in 0.3.0, optional; only when stack rulers were given)",
+      "required": ["declared", "detected", "used", "source", "to_confirm", "apps"],
+      "additionalProperties": false,
+      "properties": {
+        "declared": { "type": "array", "items": { "type": "string" } },
+        "detected": { "type": "array", "items": { "type": "string" } },
+        "used": { "type": "array", "items": { "type": "string" } },
+        "source": { "enum": ["declared", "detected", "none"] },
+        "to_confirm": { "type": "array", "items": { "type": "object", "required": ["stack", "issue"], "additionalProperties": false,
+                        "properties": { "stack": { "type": "string" }, "issue": { "type": "string" } } } },
+        "apps": { "type": "object", "additionalProperties": { "type": "array", "items": { "type": "string" } } }
+      }
+    },
     "held_tier": { "type": ["string", "null"], "description": "Tier the repository holds after drop rules (added in 0.3.0, optional)" },
     "drop_rule": {
       "type": "object", "required": ["consecutive_failures", "immediate"], "additionalProperties": false,

@@ -73,7 +73,22 @@
         "immediate": { "type": "array", "items": { "$ref": "#/$defs/clause_id" }, "uniqueItems": true }
       }
     },
-    "clauses": { "type": "array", "items": { "$ref": "#/$defs/clause" } }
+    "clauses": { "type": "array", "items": { "$ref": "#/$defs/clause" } },
+    "tighten": {
+      "type": "array",
+      "description": "kind=stack only: tighten base clauses (keep every level, never weaken); added in 0.3.0",
+      "items": {
+        "type": "object",
+        "required": ["id", "levels"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/$defs/clause_id" },
+          "levels": { "type": "array", "minItems": 1, "items": { "type": "object", "required": ["tier", "strength"],
+                      "additionalProperties": false,
+                      "properties": { "tier": { "type": "string" }, "strength": { "enum": ["must", "should"] } } } }
+        }
+      }
+    }
   },
   "allOf": [
     {

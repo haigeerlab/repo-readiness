@@ -9,17 +9,19 @@ from repo_readiness.proc import EXIT_ENV_NOT_READY, EXIT_FAIL, EXIT_OK, EXIT_USA
 
 
 def _clauses_lint(args: argparse.Namespace) -> int:
-    from repo_readiness.clauses import ClauseFileError, load
+    from repo_readiness.clauses import ClauseFileError, compose, load, load_stack
 
     try:
-        rs = load(args.file)
+        rs = compose(load(args.base), [load_stack(args.file)]) if args.base else load(args.file)
     except ClauseFileError as e:
         for p in e.problems:
             print("error: %s" % p, file=sys.stderr)
         print("%s: %d problem(s)" % (args.file, len(e.problems)), file=sys.stderr)
         return EXIT_USAGE
-    print("ok: %s %s (%s, %d clauses, %d tiers, sha256 %s)"
-          % (rs.id, rs.version, rs.kind, len(rs.clauses), len(rs.tiers), rs.sha256))
+    for w in rs.warnings:
+        print("warning: %s" % w)
+    print("ok: %s (%d clauses, %d tiers)" % (" + ".join("%s %s (%s)" % (p["id"], p["version"], p["kind"]) for p in rs.parts),
+                                             len(rs.clauses), len(rs.tiers)))
     return EXIT_OK
 
 
@@ -53,7 +55,7 @@ def _check(args: argparse.Namespace) -> int:
     from pathlib import Path
 
     from repo_readiness import report as rpt
-    from repo_readiness.clauses import ClauseFileError, load
+    from repo_readiness.clauses import ClauseFileError, compose, load, load_stack
     from repo_readiness.detect.engine import scan
     from repo_readiness.detect.score import Outcome, score
 
@@ -62,6 +64,8 @@ def _check(args: argparse.Namespace) -> int:
         return _usage_error("repository path %s is not a directory" % repo)
     try:
         ruleset = load(args.clauses)
+        stack_rulers = [load_stack(f) for f in args.stack_clauses or []]
+        ruleset = compose(ruleset, stack_rulers)
     except ClauseFileError as e:
         for p in e.problems:
             print("error: %s" % p, file=sys.stderr)
@@ -115,6 +119,20 @@ def _check(args: argparse.Namespace) -> int:
         root = parts[0].rstrip("/")
         apps[app_id] = root
         app_paths[app_id] = [root + "/**"] + parts[1:]
+    stack_info = None
+    if stack_rulers:
+        from repo_readiness.detect.stacks import resolve
+        loaded = {st.stack for st in stack_rulers}
+        declared_repo = [x.strip() for x in args.stacks.split(",") if x.strip()] if args.stacks else \
+            ([x for x in decls.data.get("stacks") or [] if isinstance(x, str)] if not decls.error else [])
+        declared_apps = {a: (s.get("stacks") if isinstance(s, dict) else None) for a, s in decls.apps().items()} \
+            if not decls.error and not args.stacks else {}
+        unknown = sorted(set(declared_repo) | {x for v in declared_apps.values() for x in (v or [])})
+        unknown = [x for x in unknown if x not in loaded]
+        if unknown:
+            return _usage_error("declared stack(s) %s have no stack ruler (given: %s)"
+                                % (", ".join(unknown), ", ".join(sorted(loaded))))
+        stack_info = resolve(repo, stack_rulers, declared_repo, declared_apps, apps)
     try:
         now = _now(args.now)
     except ValueError:
@@ -145,7 +163,7 @@ def _check(args: argparse.Namespace) -> int:
     github = _github_client(args)
     sc = scan(ruleset, repo, category=category, apps=apps, github=github, repo_name=args.repo_name, now=now,
               declarations=decls, registry=registry, risk_templates=risk_templates, exec_entries=args.exec_entries,
-              judgments=judgments, baseline=baseline)
+              judgments=judgments, baseline=baseline, stacks=stack_info)
     if decls.error:
         sc.errors.append({"clause": "*", "target": "repo", "message": decls.error})
     outcomes = {(r.clause, r.target): Outcome(r.status, waiver_until=datetime.date.fromisoformat(r.waiver_until)
@@ -156,7 +174,7 @@ def _check(args: argparse.Namespace) -> int:
     report = rpt.build(ruleset, sc, result, repo_path=repo.resolve(), repo_name=args.repo_name,
                        head=rpt.git_head(repo) if (repo / ".git").exists() else None,
                        category=category, apps=apps, app_paths=app_paths, as_of=as_of,
-                       min_tier=args.min_tier, baseline_sha256=baseline_sha, recheck=rc)
+                       min_tier=args.min_tier, baseline_sha256=baseline_sha, recheck=rc, stacks=stack_info)
     text = rpt.summary(report, ruleset)
     rpt.write(report, text, Path(args.out))
     sys.stdout.write(text)
@@ -182,11 +200,16 @@ def build_parser() -> argparse.ArgumentParser:
     clauses_sub = clauses.add_subparsers(dest="clauses_command", metavar="<subcommand>")
     lint = clauses_sub.add_parser("lint", help="校验一份条款文件")
     lint.add_argument("file", help="条款文件路径（JSON）")
+    lint.add_argument("--base", help="校验技术栈尺子时，与之组合的通用尺子")
     lint.set_defaults(func=_clauses_lint)
 
     check = sub.add_parser("check", help="按尺子检测一个仓库（只读），写出 report.json 和 summary.md")
     check.add_argument("repo", help="被测仓库的本地路径")
     check.add_argument("--clauses", required=True, help="条款文件路径")
+    check.add_argument("--stack-clauses", action="append", metavar="FILE",
+                       help="技术栈尺子（kind: stack），可重复；与 --clauses 组合，只能收紧通用条款")
+    check.add_argument("--stacks", metavar="CODES",
+                       help="本仓库用的技术栈代号（逗号分隔，如 FE,SH），覆盖 readiness.yml 的 stacks")
     check.add_argument("--out", required=True, help="输出目录（写 report.json、summary.md）")
     check.add_argument("--category", help="仓库类别，例如 plugin、frontend")
     check.add_argument("--app", action="append", metavar="NAME=ROOT[,GLOB...]",

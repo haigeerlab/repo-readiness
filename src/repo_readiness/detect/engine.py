@@ -78,7 +78,7 @@ def scan(ruleset: Ruleset, repo_root: Path, *, category: Optional[str] = None,
          repo_name: Optional[str] = None, now: Optional[Any] = None, declarations: Optional[Any] = None,
          registry: Optional[Any] = None, risk_templates: Optional[Any] = None,
          exec_entries: bool = False, judgments: Optional[Dict[str, Any]] = None,
-         baseline: Optional[Dict[str, Any]] = None) -> Scan:
+         baseline: Optional[Dict[str, Any]] = None, stacks: Optional[Dict[str, Any]] = None) -> Scan:
     apps = apps or {}
     verdicts = judge.index_verdicts(judgments)
     requests = []  # type: List[Dict[str, Any]]
@@ -94,7 +94,11 @@ def scan(ruleset: Ruleset, repo_root: Path, *, category: Optional[str] = None,
             ctx = ProbeContext(repo_root=repo_root, base=path, github=github, repo_name=repo_name, now=now,
                                declarations=declarations, registry=registry, risk_templates=risk_templates,
                                exec_entries=exec_entries)
-            res, probe = _judge_one(c, ctx, category)
+            if c.stack and not _stack_applies(c.stack, target, stacks):
+                res, probe = ClauseResult(c.id, target, "na", evidence=[
+                    "stack %s is not used by this target (see report.stacks)" % c.stack]), ProbeResult("met")
+            else:
+                res, probe = _judge_one(c, ctx, category)
             res.target = target
             res = apply_declaration(c, res, declarations)
             if probe.judge_question is not None and res.status == "unknown" and not res.error:
@@ -115,6 +119,14 @@ def scan(ruleset: Ruleset, repo_root: Path, *, category: Optional[str] = None,
             errors.append({"clause": cid, "target": target, "message": judge.check_verdict(v, None, repo_root)})
     return Scan(results=results, not_evaluated=not_evaluated, errors=errors, env_errors=env_errors,
                 judgment_requests=requests)
+
+
+def _stack_applies(code: str, target: str, stacks: Optional[Dict[str, Any]]) -> bool:
+    if stacks is None:
+        return False
+    if target != REPO:
+        return code in stacks["apps"].get(target, stacks["used"])
+    return code in stacks["used"] or any(code in v for v in stacks["apps"].values())
 
 
 def _settle_judgment(c: Clause, res: ClauseResult, question: str, repo_root: Path, verdicts: Dict,
